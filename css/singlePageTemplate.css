@@ -23,6 +23,9 @@ h1.name  {
 	color : #A3A3A3;
 	padding-left : 10%;
 }
+strong {
+	font-weight : bold
+}
 em#titlearticle {
 	color:#52bad5
 }
