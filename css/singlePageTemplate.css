@@ -94,7 +94,7 @@ td#photo {
     border-image-width: 0.5;
 	width:100% ;
 	height: inherit;
-	max-width: 150px;
+	max-width: 100px;
 	float: right;
 	clear:right
 }
