@@ -8,7 +8,6 @@
 <link href="css/singlePageTemplate.css" rel="stylesheet" type="text/css">
 <!--The following script tag downloads a font from the Adobe Edge Web Fonts server for use within the web page. We recommend that you do not modify it.-->
 <script>var __adobewebfontsappname__="dreamweaver"</script>
-<script src="http://use.edgefonts.net/source-sans-pro:n2:default.js" type="text/javascript"></script>
 <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
 <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
 <!--[if lt IE 9]>
@@ -19,12 +18,12 @@
 <body>
 <!-- Main Container -->
 	<div class ="container" style="height:auto; padding-top:40px; padding-bottom:20px">
-		<div class="headdiv" style="width:90%">
-			<table style="width: 90%">
+		<div class="headdiv" style="width:80%; margin-left: 10%; margin-right: 10%;">
+			<table style="width: 100%">
 				<tr>
 					<td id="name">
 						<div id="name">
-							<h1 class="name"> Antoine Van Biesbroeck</h1>
+							<h1 class="name" id="couleurprimaire"> Antoine Van Biesbroeck</h1>
 							<h4 class="soustitre">PhD candidate,<br> CMAP, Ecole Polytechnique & CEA Saclay<br>Paris-Saclay, France</h4>
 						</div>
 					</td>
@@ -50,16 +49,17 @@
   </header>
   <!-- Hero Section -->
   <!-- About Section -->
-	<section class="about" id="about"  style="padding-bottom: 40px; vertical-align: middle">
+	<section class="about" id="couleurneutresecondaire"  style="padding-bottom: 40px; vertical-align: middle">
 		<h3 class="finaltext">Publications</h3>
 		<p class="finaltext">
-			<ul class=finaltext>
+			<ul class="finaltext" id="ullistpublications">
 				<li><strong>2023</strong>. A. Van Biesbroeck,&nbsp;<em id=titlearticle>Generalized mutual information and their reference prior under Csizar f-divergence</em>. arXiv 2310.10530. <a href="https://doi.org/10.48550/arXiv.2310.10530">link</a></li>
 				<li><strong>2023</strong>. C. Gauchy, A. Van Biesbroeck, C. Feau, J. Garnier,&nbsp;<em id=titlearticle>Inférence variationelle de lois a priori de référence</em>, proceedings des 54èmes Journées de Statistique de la SFDS.</li>
 				<li><strong>2023</strong>. A. Van Biesbroeck, C. Gauchy, J. Garnier, C. Feau,&nbsp;<em id=titlearticle>Connections between reference prior theory and global sensitivity analysis, an illustration with f-divergences</em>, proceedings des 54èmes Journées de Statistique de la SFDS. <a href="https://hal.science/hal-04171446">link</a></li>
 				<li><strong>2023</strong>. A. Van Biesbroeck, C. Gauchy, C. Feau, J. Garnier,&nbsp;<em id="titlearticle">Influence of the choice of the seismic Intensity Measure on fragility curves estimation in a Bayesian framework based on reference prior</em>, proceedings of the 5th ECCOMAS Thematic Conference on Uncertainty Quantification in Computational Sciences and Engineering. <a href="https://doi.org/10.7712/120223.10327.19899">link</a></li>
 <li><strong>2023</strong>. A. Van Biesbroeck, C. Gauchy, C. Feau, J. Garnier,&nbsp;<em id=titlearticle>Reference prior for Bayesian estimation of seismic fragility curves</em>, arXiv 2302.06935. <a href="https://doi.org/10.48550/arXiv.2302.06935">link</a></li>
 		</ul>
+		<script src="js/sort_publications.js"></script>
 		</p><br>
 	  <p class="finaltext">Find more in my <a href="./cv.pdf">resume</a>.</p>
     </section>
