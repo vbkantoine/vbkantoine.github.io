@@ -39,7 +39,7 @@ em#titlearticle {
 }
 div.heading {
 	width:100%;
-	max-height: 50px
+	max-height: 50px;
 	text-align: center
 }
 div.headdiv#name {
@@ -95,7 +95,6 @@ td#photo {
 	width:100% ;
 	height: inherit;
 	max-width: 100px;
-	float: right;
 	clear:right
 }
 img.spotlight  {
@@ -366,8 +365,7 @@ footer {
 	float: none;
 	display: none;
 }
-header nav ul {
-}
+
 nav ul li {
 	margin-top: 0px;
 	margin-right: 0px;
