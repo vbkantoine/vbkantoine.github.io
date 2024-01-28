@@ -126,7 +126,7 @@ function listtoHTML(sorted_references) {
 
 
 
-// Exemple d'utilisation
+
 var bibtexExample = `
 @article{author2020,
     author = {John, Doe and Jane, Smith},
@@ -176,7 +176,7 @@ fs.readFile("demo.txt", (err, data) => {
 //.then(text => console.log(text))
   // outputs the content of the text file
 
-
+/*
   function read(textFile){
     var xhr=new XMLHttpRequest;
     xhr.open('GET',textFile);
@@ -188,17 +188,17 @@ function show(){
     var pre=document.createElement('pre');
     pre.textContent=this.response;
     document.body.appendChild(pre)
-}
+}*/
 
-console.log(read('./demo.txt'));
+console.log(read('./bibtex.bib'));
 
-var bibtext = readTextFile('./demo.txt') ;
+var bibtex = readTextFile('./bibtex.bib') ;
 
-
+/*
   const input = document.getElementById("test34");
   const inputValue = input.defaultValue;
   //console.log(input);
-
+*/
 
 var extractedReferences = extractReferencesFromBibtex(bibtex);
 var sorted_references = sortYearMonth(extractedReferences);
