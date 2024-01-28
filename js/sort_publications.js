@@ -117,7 +117,16 @@ function listtoHTML(sorted_references) {
             link1 = '<a href="'+ reference.url +'">' ;
             link2 = '</a>';
         }
-        htmltext = htmltext + '<em id="titlearticle">'+link1+reference.journal+link2+'</em>';
+        htmltext = htmltext + '<em id="titlearticle">'+link1+reference.title+link2+'</em>, ';
+        htmltext = htmltext + reference.journal +'. ';
+        if (reference.volume) {
+            htmltext = htmltext + reference.volume;
+            if (reference.number) {
+                htmltext = htmltext + '(' + reference.number+').';
+            } else {
+                htmltext = htmltext + '.';
+            }
+        }
         htmltext = htmltext + '</li>';
     }
     return htmltext;
