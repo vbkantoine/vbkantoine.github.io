@@ -190,7 +190,7 @@ function show(){
     document.body.appendChild(pre)
 }
 
-read('./demo.txt');
+console.log(read('./demo.txt'));
 
 
 
