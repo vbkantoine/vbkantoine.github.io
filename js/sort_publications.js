@@ -176,7 +176,26 @@ fs.readFile("demo.txt", (err, data) => {
 //.then(text => console.log(text))
   // outputs the content of the text file
 
-  const input = document.getElementById("objectext");
+
+  function read(textFile){
+    var xhr=new XMLHttpRequest;
+    xhr.open('GET',textFile);
+    xhr.onload=show;
+    xhr.send()
+}
+
+function show(){
+    var pre=document.createElement('pre');
+    pre.textContent=this.response;
+    document.body.appendChild(pre)
+}
+
+read('./demo.txt');
+
+
+
+
+  const input = document.getElementById("test34");
   const inputValue = input.defaultValue;
   console.log(input);
 
