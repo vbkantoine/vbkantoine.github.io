@@ -192,18 +192,18 @@ function show(){
 
 console.log(read('./demo.txt'));
 
-
+var bibtext = readTextFile('./demo.txt') ;
 
 
   const input = document.getElementById("test34");
   const inputValue = input.defaultValue;
-  console.log(input);
+  //console.log(input);
 
 
-var extractedReferences = extractReferencesFromBibtex(bibtexExample);
+var extractedReferences = extractReferencesFromBibtex(bibtex);
 var sorted_references = sortYearMonth(extractedReferences);
 var httext = listtoHTML(sorted_references);
 //alert(console.log(sorted_references));
-//console.log(httext);
+console.log(httext);
 
 //document.getElementById("ullistpublications").innerHTML = httext;
