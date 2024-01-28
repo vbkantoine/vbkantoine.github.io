@@ -206,4 +206,4 @@ var httext = listtoHTML(sorted_references);
 //alert(console.log(sorted_references));
 console.log(httext);
 
-//document.getElementById("ullistpublications").innerHTML = httext;
+document.getElementById("ullistpublications").innerHTML = httext;
