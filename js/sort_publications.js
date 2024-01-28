@@ -190,7 +190,7 @@ function show(){
     document.body.appendChild(pre)
 }*/
 
-console.log(read('./bibtex.bib'));
+//console.log(read('./bibtex.bib'));
 
 var bibtex = readTextFile('./bibtex.bib') ;
 
