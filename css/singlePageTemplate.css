@@ -29,13 +29,16 @@ body {
 h1.name  {
 	font-weight: bold
 }
-.soustitre {
+.remindolgrey {
 	color : #A3A3A3;
+}
+.soustitre {
+	color : #717070;
 	font-family: arial;
 	font-weight: lighter;
 }
 .finaltext  {
-	color : #A3A3A3;
+	color : #717070;
 	padding-left : 10%;
 }
 strong {
@@ -201,7 +204,7 @@ nav ul li:hover a {
 	float: left;
 	padding-left: 20px;
 	padding-right: 20px;
-	color: #A3A3A3;
+	color: #717070;
 }
 .about {
 	padding-left: 25px;
