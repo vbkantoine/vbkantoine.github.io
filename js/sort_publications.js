@@ -145,6 +145,41 @@ var bibtexExample = `
 
 
 
+function readTextFile(file) {
+    var rawFile = new XMLHttpRequest();
+    rawFile.open("GET", file, false);
+    rawFile.onreadystatechange = function () {
+      if(rawFile.readyState === 4)  {
+        if(rawFile.status === 200 || rawFile.status == 0) {
+          var allText = rawFile.responseText;
+          console.log(allText);
+         }
+      }
+    }
+    rawFile.send(null);
+  }
+ // readTextFile("demo.txt");
+
+
+
+/*const fs = require("fs");
+
+fs.readFile("demo.txt", (err, data) => {
+    if (err) throw err;
+  
+    console.log(data.toString());
+  });
+*/
+
+//fetch('demo.txt')
+//.then(response => response.text())
+//.then(text => console.log(text))
+  // outputs the content of the text file
+
+  const input = document.getElementById("objectext");
+  const inputValue = input.defaultValue;
+  console.log(input);
+
 
 var extractedReferences = extractReferencesFromBibtex(bibtexExample);
 var sorted_references = sortYearMonth(extractedReferences);

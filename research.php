@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <!doctype html>
 <html lang="en-US">
 <head>
@@ -15,7 +16,11 @@
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 <input type="file" value="./demo.txt" style="display:none" id="inputdocument">
-<script type="text/plain" src="./demo.txt" id="scriptinputdoc"></script>
+<script type="text/plain" id="scriptinputdoc">
+<?php       
+            $ressource = fopen('demo.txt', 'rb');
+            echo fread($ressource, filesize('demo.txt'));
+        ?></script>
 <link  href="./demo.txt" id="linkext" type="text/plain">
 <object data="./demo.txt" id="objectext" ></object>
 </head>
