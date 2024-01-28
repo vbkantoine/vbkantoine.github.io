@@ -192,7 +192,7 @@ function show(){
 
 //console.log(read('./bibtex.bib'));
 
-var bibtex = readTextFile('./bibtex.bib') ;
+var bibtex = readTextFile('./bibtext.bib') ;
 
 /*
   const input = document.getElementById("test34");
