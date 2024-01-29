@@ -162,9 +162,11 @@ function readTextFile(file) {
         if(rawFile.status === 200 || rawFile.status == 0) {
           var allText = rawFile.responseText;
           console.log(allText);
-          return allText;
          }
       }
+    }
+    if (rawFile.responseText) {
+        return rawFile.responseText;
     }
     rawFile.send(null);
   }
