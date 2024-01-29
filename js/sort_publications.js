@@ -64,8 +64,8 @@ function extractReferencesFromBibtex(bibtex) {
 
         // Ajouter la référence au tableau
         for (const author of reference.authors) {
-            //if (author.toLowerCase().match('biesbroeck')) {
-            if (true) {
+            if (author.toLowerCase().match('biesbroeck')) {
+            // if (true) {
                 references.push(reference);
             }
         
