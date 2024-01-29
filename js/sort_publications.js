@@ -202,7 +202,7 @@ function show(){
 
 //console.log(read('./bibtex.bib'));
 
-var bibtex = readTextFile('./bibtext.bib') ;
+var bibtext = readTextFile('./bibtext.bib') ;
 
 /*
   const input = document.getElementById("test34");
@@ -210,7 +210,7 @@ var bibtex = readTextFile('./bibtext.bib') ;
   //console.log(input);
 */
 
-var extractedReferences = extractReferencesFromBibtex(bibtex);
+var extractedReferences = extractReferencesFromBibtex(bibtext);
 var sorted_references = sortYearMonth(extractedReferences);
 var httext = listtoHTML(sorted_references);
 //alert(console.log(sorted_references));
