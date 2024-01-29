@@ -82,10 +82,10 @@ function sortYearMonth(references) {
     }
     for (var i=0; i<n; i++) {
         idmax = i;
-        for (var j=0; j<n; j++) {
-            if (newref[j].year<newref[idmax].year) {
+        for (var j=i; j<n; j++) {
+            if (newref[j].year>newref[idmax].year) {
                 idmax=j;
-            } else if (newref[j].year==newref[idmax].year && newref[j].month<newref[idmax].month){
+            } else if (newref[j].year==newref[idmax].year && newref[j].month>newref[idmax].month){
                 idmax=j;
             }
         }
