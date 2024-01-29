@@ -156,19 +156,21 @@ var bibtexExample = `
 
 function readTextFile(file) {
     var rawFile = new XMLHttpRequest();
+    var allText = ''
     rawFile.open("GET", file, false);
     rawFile.onreadystatechange = function () {
       if(rawFile.readyState === 4)  {
         if(rawFile.status === 200 || rawFile.status == 0) {
-          var allText = rawFile.responseText;
+          allText = rawFile.responseText;
           console.log(allText);
          }
       }
     }
     //if (rawFile.responseText) {
-    return rawFile.responseText;
-    //}
+    // var allText = rawFile.responseText;
     rawFile.send(null);
+    return allText;
+    //}
   }
  // readTextFile("demo.txt");
 
