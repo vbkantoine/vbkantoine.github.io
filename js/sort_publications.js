@@ -203,6 +203,8 @@ function show(){
 //console.log(read('./bibtex.bib'));
 
 var bibtext = readTextFile('./bibtext.bib') ;
+console.log(typeof bibtext);
+console.log(String(bibtext));
 
 /*
   const input = document.getElementById("test34");
