@@ -165,9 +165,9 @@ function readTextFile(file) {
          }
       }
     }
-    if (rawFile.responseText) {
-        return rawFile.responseText;
-    }
+    //if (rawFile.responseText) {
+    return rawFile.responseText;
+    //}
     rawFile.send(null);
   }
  // readTextFile("demo.txt");
