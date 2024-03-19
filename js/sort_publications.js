@@ -24,7 +24,7 @@ function extractReferencesFromBibtex(bibtex) {
             var urlMatch = entries[i].match(/url\s*=\s*{([^}]*)}/);
             var monthMatch = entries[i].match(/month\s*=\s*{([^}]*)}/);
             var dayMatch = entries[i].match(/day\s*=\s*{([^}]*)}/);
-            var booktitleMatch = entries[i].match(/booktitle\s*=\s*{([^}]*)}/);
+            //var booktitleMatch = entries[i].match(/booktitle\s*=\s*{([^}]*)}/);
             var locationMatch = entries[i].match(/location\s*=\s*{([^}]*)}/);
             var dateMatch = entries[i].match(/date\s*=\s*{([^}]*)}/);
             var contributionMatch = entries[i].match(/contribution\s*=\s*{([^}]*)}/);
@@ -72,9 +72,9 @@ function extractReferencesFromBibtex(bibtex) {
             } else {
                 reference.day = 0;
             }
-            if (booktitleMatch) {
-                reference.booktitle = booktitleMatch[1].trim();
-            }
+            //if (booktitleMatch) {
+            //    reference.booktitle = booktitleMatch[1].trim();
+            //}
             if (locationMatch) {
                 reference.locationMatch = locationMatch[1].trim();
             }
@@ -169,7 +169,7 @@ function listtoHTML_contrib(sorted_references) {
                 link1 = '<a href="'+ reference.url +'">' ;
                 link2 = '</a>';
             }
-            htmltext = htmltext + link1 + '<strong>' + reference.title + ' (' + reference.booktitle+'). ';
+            htmltext = htmltext + '<strong>' + reference.title + '</strong> (' + reference.journal+'). ';
             htmltext = htmltext + '<em id="titlearticle">'+link1+reference.contribution+link2+'</em>. ';
             htmltext = htmltext + reference.location + ', ' + reference.date + '.</li>';
         }
