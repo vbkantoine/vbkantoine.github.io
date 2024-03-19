@@ -273,12 +273,12 @@ var bib_contrib_inter = readTextFile('./bibcontribinter.bib') ;
 var extr_contrib_inter = extractReferencesFromBibtex(bib_contrib_inter);
 var sort_contrib_inter = sortYearMonth(extr_contrib_inter);
 var ht_contrib_inter = listtoHTML_contrib(sort_contrib_inter);
-
+console.log(ht_contrib_inter);
 document.getElementById("ullistcontribinter").innerHTML = ht_contrib_inter;
 
 var bib_contrib_nat = readTextFile('./bibcontribnat.bib') ;
 var extr_contrib_nat = extractReferencesFromBibtex(bib_contrib_nat);
 var sort_contrib_nat = sortYearMonth(extr_contrib_nat);
 var ht_contrib_nat = listtoHTML_contrib(sort_contrib_nat);
-
+console.log(ht_contrib_nat);
 document.getElementById("ullistcontribnat").innerHTML = ht_contrib_nat;
