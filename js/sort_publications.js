@@ -76,7 +76,7 @@ function extractReferencesFromBibtex(bibtex) {
             //    reference.booktitle = booktitleMatch[1].trim();
             //}
             if (locationMatch) {
-                reference.locationMatch = locationMatch[1].trim();
+                reference.location = locationMatch[1].trim();
             }
             if (dateMatch) {
                 reference.date = dateMatch[1].trim();
