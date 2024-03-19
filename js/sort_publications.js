@@ -162,7 +162,7 @@ function listtoHTML(sorted_references) {
 function listtoHTML_contrib(sorted_references) {
     var htmltext = '';
     for (const reference of sorted_references) {
-        if (reference.type=='contribution') {
+        if (reference.type=='conference') {
             htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
             var link1 = '', link2 = '';
             if (reference.url) {
