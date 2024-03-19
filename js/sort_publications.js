@@ -23,6 +23,11 @@ function extractReferencesFromBibtex(bibtex) {
             var doiMatch = entries[i].match(/doi\s*=\s*{([^}]*)}/);
             var urlMatch = entries[i].match(/url\s*=\s*{([^}]*)}/);
             var monthMatch = entries[i].match(/month\s*=\s*{([^}]*)}/);
+            var dayMatch = entries[i].match(/day\s*=\s*{([^}]*)}/);
+            var booktitleMatch = entries[i].match(/booktitle\s*=\s*{([^}]*)}/);
+            var locationMatch = entries[i].match(/location\s*=\s*{([^}]*)}/);
+            var dateMatch = entries[i].match(/date\s*=\s*{([^}]*)}/);
+            var contributionMatch = entries[i].match(/contribution\s*=\s*{([^}]*)}/);
 
             // Créer un dictionnaire pour stocker les informations de référence
             var reference = {};
@@ -61,6 +66,23 @@ function extractReferencesFromBibtex(bibtex) {
                 reference.month = parseInt(monthMatch[1].trim(), 10);
             } else {
                 reference.month = 0;
+            }
+            if (dayMatch) {
+                reference.day = parseInt(dayMatch[1].trim(), 10);
+            } else {
+                reference.day = 0;
+            }
+            if (booktitleMatch) {
+                reference.booktitle = booktitleMatch[1].trim();
+            }
+            if (locationMatch) {
+                reference.locationMatch = locationMatch[1].trim();
+            }
+            if (dateMatch) {
+                reference.date = dateMatch[1].trim();
+            }
+            if (contributionMatch){
+                reference.contribution = contributionMatch[1].trim();
             }
 
             // Ajouter la référence au tableau
@@ -101,34 +123,54 @@ function sortYearMonth(references) {
 function listtoHTML(sorted_references) {
     var htmltext = '';
     for (const reference of sorted_references) {
-        htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
-        var auths = '';
-        for (const author of reference.authors) {
-            var lastfirst = author.split(',').map(function(name) {
-                return name.trim();
-            });
-            auths = auths + lastfirst[1].substring(0,1).toUpperCase() + '. ' + lastfirst[0] + ', ';
-        }
-        htmltext = htmltext+auths
-        var link1 = '', link2 = '';
-        if (reference.doi) {
-            link1 = '<a href="https://doi.org/'+reference.doi+'">';
-            link2 = '</a>';
-        } else if (reference.url) {
-            link1 = '<a href="'+ reference.url +'">' ;
-            link2 = '</a>';
-        }
-        htmltext = htmltext + '<em id="titlearticle">'+link1+reference.title+link2+'</em>, ';
-        htmltext = htmltext + reference.journal +'. ';
-        if (reference.volume) {
-            htmltext = htmltext + reference.volume;
-            if (reference.number) {
-                htmltext = htmltext + '(' + reference.number+').';
-            } else {
-                htmltext = htmltext + '.';
+        if (reference.type=='article' || reference.type=='inproceedings') {
+            htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
+            var auths = '';
+            for (const author of reference.authors) {
+                var lastfirst = author.split(',').map(function(name) {
+                    return name.trim();
+                });
+                auths = auths + lastfirst[1].substring(0,1).toUpperCase() + '. ' + lastfirst[0] + ', ';
             }
+            htmltext = htmltext+auths
+            var link1 = '', link2 = '';
+            if (reference.doi) {
+                link1 = '<a href="https://doi.org/'+reference.doi+'">';
+                link2 = '</a>';
+            } else if (reference.url) {
+                link1 = '<a href="'+ reference.url +'">' ;
+                link2 = '</a>';
+            }
+            htmltext = htmltext + '<em id="titlearticle">'+link1+reference.title+link2+'</em>, ';
+            htmltext = htmltext + reference.journal +'. ';
+            if (reference.volume) {
+                htmltext = htmltext + reference.volume;
+                if (reference.number) {
+                    htmltext = htmltext + '(' + reference.number+').';
+                } else {
+                    htmltext = htmltext + '.';
+                }
+            }
+            htmltext = htmltext + '</li>';
         }
-        htmltext = htmltext + '</li>';
+    }
+    return htmltext;
+}
+
+function listtoHTML_contrib(sorted_references) {
+    var htmltext = '';
+    for (const reference of sorted_references) {
+        if (reference.type=='contribution') {
+            htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
+            var link1 = '', link2 = '';
+            if (reference.url) {
+                link1 = '<a href="'+ reference.url +'">' ;
+                link2 = '</a>';
+            }
+            htmltext = htmltext + link1 + '<strong>' + reference.title + ' (' + reference.booktitle+'). ';
+            htmltext = htmltext + '<em id="titlearticle">'+link1+reference.contribution+link2+'</em>. ';
+            htmltext = htmltext + reference.location + ', ' + reference.date + '.</li>';
+        }
     }
     return htmltext;
 }
@@ -224,3 +266,17 @@ var httext = listtoHTML(sorted_references);
 console.log(httext);
 
 document.getElementById("ullistpublications").innerHTML = httext;
+
+var bib_contrib_inter = readTextFile('./bibcontribinter.bib') ;
+var extr_contrib_inter = extractReferencesFromBibtex(bib_contrib_inter);
+var sort_contrib_inter = sortYearMonth(extr_contrib_inter);
+var ht_contrib_inter = listtoHTML_contrib(sort_contrib_inter);
+
+document.getElementById("ullistcontribinter").innerHTML = ht_contrib_inter;
+
+var bib_contrib_nat = readTextFile('./bibcontribnat.bib') ;
+var extr_contrib_nat = extractReferencesFromBibtex(bib_contrib_nat);
+var sort_contrib_nat = sortYearMonth(extr_contrib_nat);
+var ht_contrib_nat = listtoHTML_contrib(sort_contrib_nat);
+
+document.getElementById("ullistcontribnat").innerHTML = ht_contrib_nat;
