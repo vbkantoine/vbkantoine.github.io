@@ -28,6 +28,8 @@ function extractReferencesFromBibtex(bibtex) {
             var locationMatch = entries[i].match(/location\s*=\s*{([^}]*)}/);
             var dateMatch = entries[i].match(/date\s*=\s*{([^}]*)}/);
             var contributionMatch = entries[i].match(/contribution\s*=\s*{([^}]*)}/);
+            var acceptedMatch = entries[i].match(/accepted\s*=\s*{([^}]*)}/);
+            var pagesMatch = entries[i].match(/pages\s*=\s*{([^}]*)}/);
 
             // Créer un dictionnaire pour stocker les informations de référence
             var reference = {};
@@ -83,6 +85,14 @@ function extractReferencesFromBibtex(bibtex) {
             }
             if (contributionMatch){
                 reference.contribution = contributionMatch[1].trim();
+            }
+            if (acceptedMatch){
+                reference.accepted = parseInt(acceptedMatch[1].trim(), 10);
+            } else {
+                reference.accepted = reference.year;
+            }
+            if (pagesMatch){
+                reference.pages = pagesMatch[1].trim();
             }
 
             // Ajouter la référence au tableau
@@ -150,10 +160,16 @@ function listtoHTML(sorted_references) {
             if (reference.volume) {
                 htmltext = htmltext + reference.volume;
                 if (reference.number) {
-                    htmltext = htmltext + '(' + reference.number+').';
+                    htmltext = htmltext + '(' + reference.number+'). ';
                 } else {
-                    htmltext = htmltext + '.';
+                    htmltext = htmltext + '. ';
                 }
+            }
+            if (reference.accepted) {
+                htmltext = htmltext + reference.accepted + '. ';
+            }
+            if (reference.pages) {
+                htmltext = htmltext + reference.pages +'. ';
             }
             htmltext = htmltext + '</li>';
         }
