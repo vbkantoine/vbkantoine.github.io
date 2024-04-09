@@ -169,7 +169,7 @@ function listtoHTML(sorted_references) {
                 htmltext = htmltext + reference.accepted + '. ';
             }
             if (reference.pages) {
-                htmltext = htmltext + reference.pages +'. ';
+                htmltext = htmltext + 'pp '+ reference.pages +'. ';
             }
             htmltext = htmltext + '</li>';
         }
