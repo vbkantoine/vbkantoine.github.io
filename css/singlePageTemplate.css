@@ -20,7 +20,7 @@ body {
 	color: rgb(35, 31, 32);
 }
 #couleurneutresecondaire {
-	color: rgb(99, 96, 97);
+	color: #636061;
 }
 .about a {
 	color: rgb(12, 92, 150);
@@ -33,12 +33,12 @@ h1.name  {
 	color : #A3A3A3;
 }
 .soustitre {
-	color : #717070;
+	color : #636061;
 	font-family: arial;
 	font-weight: lighter;
 }
 .finaltext  {
-	color : #717070;
+	color : #636061;
 	padding-left : 10%;
 }
 strong {
@@ -185,7 +185,7 @@ nav ul li:hover a {
 }
 .light {
 	font-weight: bold;
-	color: #717070;
+	color: #636061;
 }
 .tagline {
 	text-align: center;
@@ -204,7 +204,7 @@ nav ul li:hover a {
 	float: left;
 	padding-left: 20px;
 	padding-right: 20px;
-	color: #717070;
+	color: #636061;
 }
 .about {
 	padding-left: 25px;
@@ -300,7 +300,7 @@ footer .footer_column h3 {
 	text-align: center;
 }
 footer .footer_column p {
-	color: #717070;
+	color: #636061;
 	background-color: #FFFFFF;
 }
 .cards {
@@ -347,7 +347,7 @@ footer .footer_column p {
 	text-align: center;
 	padding-top: 20px;
 	padding-bottom: 20px;
-	background-color: #717070;
+	background-color: #636061;
 	color: #FFFFFF;
 	font-weight: lighter;
 	border-top-width: 2px;
