@@ -196,6 +196,25 @@ function listtoHTML_contrib(sorted_references) {
 }
 
 
+function listtoHTML_seminars(sorted_references) {
+    var htmltext = '';
+    for (const reference of sorted_references) {
+        if (reference.type=='seminar') {
+            htmltext = htmltext + '<strong>'+reference.title+'</strong> ('+reference.year+' '+ reference.location +'). ';
+            /*var link1 = '', link2 = '';
+            if (reference.url) {
+                link1 = '<a href="'+ reference.url +'">' ;
+                link2 = '</a>';
+            }*/
+            /*htmltext = htmltext + '<strong>' + reference.title + '</strong> (' + reference.journal+'). ';
+            htmltext = htmltext + '<em id="titlearticle">'+link1+reference.contribution+link2+'</em>. ';
+            htmltext = htmltext + reference.location + ', ' + reference.date + '.</li>';*/
+        }
+    }
+    return htmltext;
+}
+
+
 
 
 
@@ -300,3 +319,8 @@ var sort_contrib_nat = sortYearMonth(extr_contrib_nat);
 var ht_contrib_nat = listtoHTML_contrib(sort_contrib_nat);
 console.log(ht_contrib_nat);
 document.getElementById("ullistcontribnat").innerHTML = ht_contrib_nat;
+
+var ht_seminar_nat = listtoHTML_seminars(sort_contrib_nat);
+console.log(ht_seminar_nat);
+document.getElementById("ullistseminars").innerHTML = ht_seminar_nat;
+
