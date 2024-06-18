@@ -134,6 +134,34 @@ function sortYearMonth(references) {
     return newref;
 }
 
+function sortSeminars(references) {
+    var newref = [], savedtitle = [], n=references.lenght ;
+    for (var i=0; i<n; i++) {
+        if (!(savedtitle.includes(references[i].title))) {
+            var instref = {} ;
+            instref.years = [] ;
+            instref.locations = [] ;
+            instref.url = []
+            var ititle = i ;
+            instref.title = references[ititle].title ;
+            instref.journal = references[ititle].journal ;
+        } else {
+            var ititle = newref.findIndex(function (element) {element.title==references[i].title} );
+        }
+        instref.years.push(references[ititle].year) ;
+        instref.locations.push(references[ititle].location) ;
+
+        if (references[ititle].url) {
+            var insurl = references[ititle].url ;
+        } else {
+            var insurl = '' ;
+        }
+        instref.url.push(insurl) ;
+        newref.push(instref) ;
+    }
+    return newref ;
+}
+
 function listtoHTML(sorted_references) {
     var htmltext = '';
     for (const reference of sorted_references) {
@@ -200,7 +228,7 @@ function listtoHTML_seminars(sorted_references) {
     var htmltext = '';
     for (const reference of sorted_references) {
         if (reference.type=='seminar') {
-            htmltext = htmltext + '<strong>'+reference.title+'</strong> ('+reference.year+' '+ reference.location +'). ';
+            htmltext = htmltext + '<strong title="'+reference.journal+'">'+reference.title+'</strong> ('+reference.year+' <em>'+ reference.location +'</em>). ';
             /*var link1 = '', link2 = '';
             if (reference.url) {
                 link1 = '<a href="'+ reference.url +'">' ;
@@ -213,6 +241,8 @@ function listtoHTML_seminars(sorted_references) {
     }
     return htmltext;
 }
+
+// function listtoHTML_seminars_grouped()
 
 
 
