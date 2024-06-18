@@ -164,8 +164,8 @@ function sortSeminars(references) {
 
 function listtoHTML(sorted_references) {
     var htmltext = '';
+    var i=0;
     for (const reference of sorted_references) {
-        var i=0;
         if (reference.type=='article' || reference.type=='inproceedings') {
             htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
             var auths = '';
