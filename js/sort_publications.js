@@ -199,6 +199,8 @@ function listtoHTML(sorted_references) {
             if (reference.pages) {
                 htmltext = htmltext + 'pp '+ reference.pages +'. ';
             }
+            htmltext = htmltext + '<div id="exempleA"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
+            htmltext = htmltext + '<div class="mytext">Emensis .</div></div>' ;
             htmltext = htmltext + '</li>';
         }
     }

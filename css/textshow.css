@@ -1,0 +1,24 @@
+.conteneur{
+  width:200px;
+  margin:auto;
+  text-align :center;
+}
+
+/* On cache les textes par défaut */
+.circle .mytext{
+  display :none
+}
+/* Quand on change la class fa-plus-circle en fa-minus-circle
+* on affiche le texte qui est adjacent au bouton qui a changé de class
+*/
+.circle .fa-minus-circle + .mytext{
+  display : block
+}
+
+.fa-plus-circle::before {
+  content: "\f055";
+}
+
+.fa-minus-circle::before {
+  content: "\f056";
+}
