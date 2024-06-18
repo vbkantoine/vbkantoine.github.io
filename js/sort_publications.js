@@ -165,6 +165,7 @@ function sortSeminars(references) {
 function listtoHTML(sorted_references) {
     var htmltext = '';
     for (const reference of sorted_references) {
+        var i=0;
         if (reference.type=='article' || reference.type=='inproceedings') {
             htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
             var auths = '';
@@ -199,9 +200,12 @@ function listtoHTML(sorted_references) {
             if (reference.pages) {
                 htmltext = htmltext + 'pp '+ reference.pages +'. ';
             }
-            htmltext = htmltext + '<div id="exempleA"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
-            htmltext = htmltext + '<div class="mytext">Emensis .</div></div>' ;
+            if (i==0) {
+                htmltext = htmltext + '<div id="exempleA"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
+                htmltext = htmltext + '<div class="mytext">Emensis .</div></div>' ;
+            }
             htmltext = htmltext + '</li>';
+            i++;
         }
     }
     return htmltext;
