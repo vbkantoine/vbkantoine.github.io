@@ -201,7 +201,7 @@ function listtoHTML(sorted_references) {
                 htmltext = htmltext + 'pp '+ reference.pages +'. ';
             }
             if (i==0) {
-                htmltext = htmltext + '<div id="exempleA"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
+                htmltext = htmltext + '<div class="circle" id="exempleA"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
                 htmltext = htmltext + '<div class="mytext">Emensis .</div></div>' ;
             }
             htmltext = htmltext + '</li>';
