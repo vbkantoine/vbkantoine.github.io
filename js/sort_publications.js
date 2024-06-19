@@ -217,7 +217,7 @@ function listtoHTML(sorted_references) {
             entries = ["authors","title","volume","number","pages","doi","url"] ;
             function addEntry(tableau,chaine) {
                 var st = chaine ;
-                for (const entry in tableau){
+                for (const entry of tableau){
                     if (reference[entry]){
                         st = st + entry + ' = {'+reference[entry]+'},\n';
                     }
