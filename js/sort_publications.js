@@ -172,7 +172,7 @@ function listtoHTML(sorted_references) {
     var htmltext = '';
     var i=0;
     for (const reference of sorted_references) {
-        if (reference.entryType=='article' || reference.entryType=='inproceedings') {
+        if (reference.type=='article' || reference.type=='inproceedings') {
             htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
             var auths = '';
             for (const author of reference.authors) {
@@ -222,7 +222,7 @@ function listtoHTML(sorted_references) {
                     }
                 }
             }
-            if (reference.entryType=='article'){
+            if (reference.type=='article'){
                 entries.push('journal');
             } else if (reference.entryType=='inproceedings') {
                 reference.booktitle = reference.journal ;

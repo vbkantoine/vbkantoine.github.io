@@ -20,5 +20,5 @@
 }
 
 .fa-minus-circle::before {
-  content: "+";
+  content: "-";
 }
