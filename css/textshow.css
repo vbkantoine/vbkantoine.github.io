@@ -49,3 +49,7 @@
   .link-hid-:hover {
     cursor: pointer;
   }
+
+  em.notcop {
+    display: none;
+  }

@@ -216,16 +216,16 @@ function funct_dict(key){
     let oExemple =  document.getElementById(key);
     aCircle = oExemple.getElementsByClassName("hid-copied");
     console.log(aCircle);
-    aCircle.classList.remove("notcop");
-    aCircle.classList.add("cop");
+    aCircle.classList[0].remove("notcop");
+    aCircle.classList[0].add("cop");
 }
 function funct_out(key){
     let oExemple =  document.getElementById(key);
     aCircle = oExemple.getElementsByClassName("hid-copied");
     setTimeout(function(){
         // aCircle.setAttribute("class", "notcop");
-        aCircle.classList.remove("cop");
-        aCircle.classList.add("notcop");
+        aCircle.classList[0].remove("cop");
+        aCircle.classList[0].add("notcop");
     }, 500);
     //console.log("DOG");
 }
