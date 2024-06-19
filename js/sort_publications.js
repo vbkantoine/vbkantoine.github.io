@@ -166,7 +166,10 @@ function sortSeminars(references) {
     return newref ;
 }
 
-var funct_dict = {};
+var bib_dicts = {};
+function funct_dict(key){
+    alert(bib_dicts[key]);
+}
 
 function listtoHTML(sorted_references) {
     var htmltext = '';
@@ -212,10 +215,10 @@ function listtoHTML(sorted_references) {
             if (reference.pdf) {
                 htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">pdf</a>' ;
             }
-            htmltext = htmltext + '<a class="link-hid-" id="bib" href="#" onclick="funct_dict.'+IdName+'()">bibtex</a>' ;
+            htmltext = htmltext + '<a class="link-hid-" id="bib" href="#" onclick="'+"funct_dict('+IdName+')"+'">bibtex</a>' ;
             var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
             bib_n = bib_n + 'authors = {' ;
-            for (var l=0; l<reference.authors.lenght; l++) {
+            for (var l=0; l<reference.authors.length; l++) {
                 if (l>0){
                     bib_n = bib_n + ' and ';
                 }
@@ -243,10 +246,7 @@ function listtoHTML(sorted_references) {
             bib_n = addEntry(entries, bib_n) ;
             bib_n = bib_n + 'year = {'+reference.accepted+'},\n' ;
             bib_n = bib_n + '}';
-            function printbib() {
-                alert(bib_n);
-            }
-            funct_dict[IdName] = printbib ;
+            bib_dicts[IdName] = bib_n ;
             htmltext = htmltext + '</div></em>';
             htmltext = htmltext + '</li>';
             i++;
