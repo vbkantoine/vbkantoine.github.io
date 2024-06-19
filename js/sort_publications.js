@@ -114,6 +114,49 @@ function extractReferencesFromBibtex(bibtex) {
     return references;
 }
 
+function compile_bib_n(reference) {
+    var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
+    bib_n = bib_n + 'authors = {' ;
+    for (var l=0; l<reference.authors.length; l++) {
+        if (l>0){
+            bib_n = bib_n + ' and ';
+        }
+        bib_n = bib_n + reference.authors[l] ;
+    }
+    bib_n = bib_n + '},\n';
+    entries = ["title","volume","number","pages","doi","url"] ;
+    function addEntry(tableau,chaine) {
+        var st = chaine ;
+        for (const entry of tableau){
+            if (reference[entry]){
+                st = st + entry + ' = {'+reference[entry]+'},\n';
+            }
+        }
+        return st ;
+    }
+    if (reference.type=='article'){
+        entries.push('journal');
+    } else if (reference.type=='inproceedings') {
+        reference.booktitle = reference.journal ;
+        entries.push('booktitle');
+        entries.push('location');
+        entries.push('publisher');
+    }
+    bib_n = addEntry(entries, bib_n) ;
+    bib_n = bib_n + 'year = {'+reference.accepted+'},\n' ;
+    bib_n = bib_n + '}';
+   return bib_n ;
+}
+
+function plot_bib_n(bib_n){
+    texth = bib_n.replace('\n','<br>&nbsp;&nbsp;');
+    return texth ;
+}
+
+
+
+
+
 function sortYearMonth(references) {
     var newref = [], n=references.length, idmax=0;
     for (const reference of references) {
@@ -168,8 +211,21 @@ function sortSeminars(references) {
 
 var bib_dicts = {};
 function funct_dict(key){
-    alert(bib_dicts[key]);
+    // alert(bib_dicts[key]);
+    navigator.clipboard.writeText(bib_dicts[key]);
+    let oExemple =  document.getElementById(key);
+    aCircle = oExemple.getElementsByClassName("hid-copied");
+    aCircle.classList.replace("notcop", "cop");
 }
+function funct_out(key){
+    let oExemple =  document.getElementById(key);
+    aCircle = oExemple.getElementsByClassName("hid-copied");
+    setTimeout(function(){
+        aCircle.classList.replace("cop", "notcop");
+    }, 500);
+    //console.log("DOG");
+}
+
 
 function listtoHTML(sorted_references) {
     var htmltext = '';
@@ -187,10 +243,10 @@ function listtoHTML(sorted_references) {
             htmltext = htmltext+auths
             var link1 = '', link2 = '';
             if (reference.doi) {
-                link1 = '<a href="https://doi.org/'+reference.doi+'">';
+                link1 = '<a title="'+reference.doi+'" href="https://doi.org/'+reference.doi+'">';
                 link2 = '</a>';
             } else if (reference.url) {
-                link1 = '<a href="'+ reference.url +'">' ;
+                link1 = '<a title="'+reference.url+'" href="'+ reference.url +'">' ;
                 link2 = '</a>';
             }
             htmltext = htmltext + '<em id="titlearticle">'+link1+reference.title+link2+'</em>, ';
@@ -215,38 +271,13 @@ function listtoHTML(sorted_references) {
             if (reference.pdf) {
                 htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">pdf</a>' ;
             }
-            htmltext = htmltext + ' <a class="link-hid-" id="bib" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
-            var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
-            bib_n = bib_n + 'authors = {' ;
-            for (var l=0; l<reference.authors.length; l++) {
-                if (l>0){
-                    bib_n = bib_n + ' and ';
-                }
-                bib_n = bib_n + reference.authors[l] ;
-            }
-            bib_n = bib_n + '},\n';
-            entries = ["title","volume","number","pages","doi","url"] ;
-            function addEntry(tableau,chaine) {
-                var st = chaine ;
-                for (const entry of tableau){
-                    if (reference[entry]){
-                        st = st + entry + ' = {'+reference[entry]+'},\n';
-                    }
-                }
-                return st ;
-            }
-            if (reference.type=='article'){
-                entries.push('journal');
-            } else if (reference.type=='inproceedings') {
-                reference.booktitle = reference.journal ;
-                entries.push('booktitle');
-                entries.push('location');
-                entries.push('publisher');
-            }
-            bib_n = addEntry(entries, bib_n) ;
-            bib_n = bib_n + 'year = {'+reference.accepted+'},\n' ;
-            bib_n = bib_n + '}';
+            //htmltext = htmltext + ' <a class="link-hid-" id="bib" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
+            var bib_n = compile_bib_n(reference);
             bib_dicts[IdName] = bib_n ;
+            htmltext = htmltext + '<div id="zonebib">';
+            htmltext = htmltext + plot_bib_n(bib_n);
+            htmltext = htmltext + '</div>';
+            htmltext = htmltext + '<a class="link-hid-" id="bib" onmouseout="'+"funct_out('"+IdName+"')"+'" onclick="'+"funct_dict('"+IdName+"')"+'">copy bibtex<em class="hid-copied notcop">: copied &#10003;</em></a>' ;
             htmltext = htmltext + '</div></em>';
             htmltext = htmltext + '</li>';
             i++;
