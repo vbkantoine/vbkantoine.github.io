@@ -296,7 +296,7 @@ function listtoHTML(sorted_references) {
             if (reference.pdf) {
                 htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">view pdf</a>&ensp;/&ensp;' ;
             }
-            htmltext = htmltext + '<a class="link-hid-" id="bib" onmouseout="'+"funct_out('"+IdName+"')"+'" onclick="'+"funct_dict('"+IdName+"')"+'"> copy bibtex<em class="hid-copied notcop">: copied &#10003;</em></a>' ;
+            htmltext = htmltext + '<a class="link-hid-" id="bib" onmouseout="'+"funct_out('"+IdName+"')"+'" onclick="'+"funct_dict('"+IdName+"')"+'">copy bibtex<em class="hid-copied notcop">: copied &#10003;</em></a>' ;
             //htmltext = htmltext + ' <a class="link-hid-" id="bib" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
             var bib_n = compile_bib_n(reference);
             bib_dicts[IdName] = bib_n ;
