@@ -214,7 +214,14 @@ function listtoHTML(sorted_references) {
             }
             htmltext = htmltext + '<a class="link-hid-" id="bib" href="#" onclick="funct_dict.'+IdName+'()">bibtex</a>' ;
             var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
-            entries = ["authors","title","volume","number","pages","doi","url"] ;
+            bib_n = bin_n + 'authors = {' ;
+            for (var l=0; l<reference.authors.lenght; l++) {
+                if (l>0){
+                    bib_n = bib_n + ' and ';
+                }
+                bib_n = bib_n + reference.authors[l] ;
+            }
+            entries = ["title","volume","number","pages","doi","url"] ;
             function addEntry(tableau,chaine) {
                 var st = chaine ;
                 for (const entry of tableau){

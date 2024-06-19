@@ -22,3 +22,13 @@
 .fa-minus-circle::before {
   content: "-";
 }
+
+.circle .fa-minus-circle + .mytext{
+    margin: 0;
+    padding: 6px;
+    border: 1px inset;
+    text-align: left;
+    direction: ltr;
+    background: #f2f6f8 none repeat-x;
+    font-size: 12px;
+  }
