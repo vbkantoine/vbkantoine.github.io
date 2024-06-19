@@ -215,12 +215,14 @@ function listtoHTML(sorted_references) {
             htmltext = htmltext + '<a class="link-hid-" id="bib" href="#" onclick="funct_dict.'+IdName+'()">bibtex</a>' ;
             var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
             entries = ["authors","title","volume","number","pages","doi","url"] ;
-            function addEntry(arr,str) {
-                for (const entry in arr){
+            function addEntry(tableau,chaine) {
+                var st = chaine ;
+                for (const entry in tableau){
                     if (reference[entry]){
-                        str = str + entry + ' = {'+reference[entry]+'},\n';
+                        st = st + entry + ' = {'+reference[entry]+'},\n';
                     }
                 }
+                return st ;
             }
             if (reference.type=='article'){
                 entries.push('journal');
@@ -230,7 +232,7 @@ function listtoHTML(sorted_references) {
                 entries.push('location');
                 entries.push('publisher');
             }
-            addEntry(entries, bib_n) ;
+            bib_n = addEntry(entries, bib_n) ;
             bib_n = bib_n + 'year = {'+reference.accepted+'},\n' ;
             bib_n = bib_n + '}';
             function printbib() {
