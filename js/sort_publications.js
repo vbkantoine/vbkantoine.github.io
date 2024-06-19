@@ -215,7 +215,7 @@ function listtoHTML(sorted_references) {
             if (reference.pdf) {
                 htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">pdf</a>' ;
             }
-            htmltext = htmltext + ' <a class="link-hid-" id="bib" href="" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
+            htmltext = htmltext + ' <a class="link-hid-" id="bib" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
             var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
             bib_n = bib_n + 'authors = {' ;
             for (var l=0; l<reference.authors.length; l++) {
@@ -278,7 +278,7 @@ function listtoHTML_seminars(sorted_references) {
     var htmltext = '';
     for (const reference of sorted_references) {
         if (reference.type=='seminar') {
-            htmltext = htmltext + '<strong title="'+reference.journal+'">'+reference.title+'</strong> ('+reference.year+' <em>'+ reference.location +'</em>). ';
+            htmltext = htmltext + '<strong class="title-cont-sem" title="'+reference.journal+'">'+reference.title+'</strong> ('+reference.year+' <em>'+ reference.location +'</em>). ';
             /*var link1 = '', link2 = '';
             if (reference.url) {
                 link1 = '<a href="'+ reference.url +'">' ;

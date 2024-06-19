@@ -16,7 +16,7 @@
 }
 
 .fa::before {
-    font-size: 15px;
+    font-size: 13px;
     font-family: monospace;
     font-style: normal;
     color:rgb(12, 92, 150);
@@ -42,7 +42,7 @@
     border-color: #3d3b3b;
     text-align: left;
     direction: ltr;
-    background: #f2f6f8 none repeat-x;
+    background: #f8f7f2 none repeat-x;
     font-size: 12px;
   }
 

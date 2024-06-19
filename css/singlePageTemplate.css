@@ -47,6 +47,11 @@ strong {
 em#titlearticle {
 	color:rgb(12, 92, 150)
 }
+strong.title-cont-sem:hover {
+	text-decoration: underline dotted;
+	cursor: help;
+}
+
 /* Container */
 .container {
 	width: 90%;
