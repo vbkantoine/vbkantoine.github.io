@@ -139,7 +139,7 @@ function sortYearMonth(references) {
 }
 
 function sortSeminars(references) {
-    var newref = [], savedtitle = [], n=references.lenght ;
+    var newref = [], savedtitle = [], n=references.length ;
     for (var i=0; i<n; i++) {
         if (!(savedtitle.includes(references[i].title))) {
             var instref = {} ;
