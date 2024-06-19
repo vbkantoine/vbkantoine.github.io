@@ -215,6 +215,7 @@ function funct_dict(key){
     navigator.clipboard.writeText(bib_dicts[key]);
     let oExemple =  document.getElementById(key);
     aCircle = oExemple.getElementsByClassName("hid-copied");
+    console.log(aCircle);
     aCircle.classList.remove("notcop");
     aCircle.classList.add("cop");
 }
