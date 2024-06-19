@@ -19,15 +19,11 @@
   content: "[+]";
 }
 
-.fa-plus-circle::before:hover {
-    cursor : pointer
-  }
-
 .fa-minus-circle::before {
   content: "[-]";
 }
 
-.fa-minus-circle::before:hover {
+.fa:hover {
     cursor : pointer
   }
 
