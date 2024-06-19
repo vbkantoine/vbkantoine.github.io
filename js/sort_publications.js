@@ -215,7 +215,7 @@ function listtoHTML(sorted_references) {
             if (reference.pdf) {
                 htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">pdf</a>' ;
             }
-            htmltext = htmltext + '<a class="link-hid-" id="bib" href="#" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
+            htmltext = htmltext + ' <a class="link-hid-" id="bib" href="" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
             var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
             bib_n = bib_n + 'authors = {' ;
             for (var l=0; l<reference.authors.length; l++) {
@@ -237,7 +237,7 @@ function listtoHTML(sorted_references) {
             }
             if (reference.type=='article'){
                 entries.push('journal');
-            } else if (reference.entryType=='inproceedings') {
+            } else if (reference.type=='inproceedings') {
                 reference.booktitle = reference.journal ;
                 entries.push('booktitle');
                 entries.push('location');

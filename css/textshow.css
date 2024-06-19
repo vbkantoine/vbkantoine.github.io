@@ -16,12 +16,20 @@
 }
 
 .fa-plus-circle::before {
-  content: "+";
+  content: "[+]";
 }
 
+.fa-plus-circle::before:hover {
+    cursor : pointer
+  }
+
 .fa-minus-circle::before {
-  content: "-";
+  content: "[-]";
 }
+
+.fa-minus-circle::before:hover {
+    cursor : pointer
+  }
 
 .circle .fa-minus-circle + .mytext{
     margin: 0;
