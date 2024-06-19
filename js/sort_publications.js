@@ -148,9 +148,30 @@ function compile_bib_n(reference) {
    return bib_n ;
 }
 
+function replaceAllExceptLast(str, searchValue, newValue) {
+    // Utiliser une expression régulière pour trouver toutes les occurrences
+    let regex = new RegExp(searchValue, 'g');
+    // Trouver toutes les correspondances
+    let matches = str.match(regex);
+    // Si il n'y a pas de correspondances ou seulement une, retourner la chaîne d'origine
+    if (!matches || matches.length <= 1) {
+        return str;
+    }
+    // Remplacer toutes les occurrences sauf la dernière
+    let lastIndex = str.lastIndexOf(matches[matches.length - 1]);
+    let beforeLast = str.slice(0, lastIndex);
+    let afterLast = str.slice(lastIndex);
+    // Remplacer toutes les occurrences dans la première partie
+    beforeLast = beforeLast.replace(regex, newValue);
+    // Recomposer la chaîne en gardant la dernière occurrence intacte
+    return beforeLast + afterLast;
+}
+
 function plot_bib_n(bib_n){
-    texth = bib_n.replace('\n','<br><span id="margebib">').replace('},','</span><br><span id="margebib">');
-    return texth +'</span>';
+    texth = bib_n.replace('\n','<br><span id="margebib">');
+    texth = replaceAllExceptLast(texth, '\n', '</span><br><span id="margebib">');
+    texth = texth.replace('\n', '</span><br>');
+    return texth;
 }
 
 
