@@ -30,6 +30,7 @@ function extractReferencesFromBibtex(bibtex) {
             var contributionMatch = entries[i].match(/contribution\s*=\s*{([^}]*)}/);
             var acceptedMatch = entries[i].match(/accepted\s*=\s*{([^}]*)}/);
             var pagesMatch = entries[i].match(/pages\s*=\s*{([^}]*)}/);
+            var pdfMatch = entries[i].match(/pdf\s*=\s*{([^}]*)}/);
 
             // Créer un dictionnaire pour stocker les informations de référence
             var reference = {};
@@ -93,6 +94,9 @@ function extractReferencesFromBibtex(bibtex) {
             }
             if (pagesMatch){
                 reference.pages = pagesMatch[1].trim();
+            }
+            if (pdfMatch){
+                reference.pdf = pdfMatch[1].trim();
             }
 
             // Ajouter la référence au tableau
@@ -162,6 +166,8 @@ function sortSeminars(references) {
     return newref ;
 }
 
+var funct_dict = {};
+
 function listtoHTML(sorted_references) {
     var htmltext = '';
     var i=0;
@@ -200,11 +206,37 @@ function listtoHTML(sorted_references) {
             if (reference.pages) {
                 htmltext = htmltext + 'pp '+ reference.pages +'. ';
             }
-            //if (i==0) {
-            var IdName = 'cl-'+reference.year+i.toString() ;
+            var IdName = 'cl'+reference.year+i.toString() ;
             htmltext = htmltext + '<em class="circle" id="'+IdName+'"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
-            htmltext = htmltext + '<div class="mytext">Emensis .</div></em>' ;
-            //}
+            htmltext = htmltext + '<div class="mytext">';
+            if (reference.pdf) {
+                htmltext = htmltext + '<a id="link-hid-pdf" href="'+reference.pdf+'">pdf</a><a onclick="funct_dict.'+IdName+'">bibtex</a>' ;
+            }
+            var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+',\n' ;
+            entries = ["authors","title","volume","number","pages","doi","url"] ;
+            function addEntry(arr,str) {
+                for (const entry in arr){
+                    if (reference[entry]){
+                        str = str + entry + ' = {'+reference[entry]+'},\n';
+                    }
+                }
+            }
+            if (reference.type=='article'){
+                entries.push('journal');
+            } else if (reference.type=='article') {
+                reference.booktitle = reference.journal ;
+                entries.push('booktitle');
+                entries.push('location');
+                entries.push('publisher');
+            }
+            addEntry(entries, bib_n) ;
+            bib_n = bib_n + 'year = {'+reference.accepted+'},\n' ;
+            bib_n = bib_n + '}';
+            function printbib() {
+                alert(bib_n);
+            }
+            funct_dict[IdName] = printbib ;
+            htmltext = htmltext + '</div></em>';
             htmltext = htmltext + '</li>';
             i++;
         }
