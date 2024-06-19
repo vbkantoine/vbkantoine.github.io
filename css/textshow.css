@@ -48,8 +48,17 @@
 
   .link-hid-:hover {
     cursor: pointer;
+    text-decoration: underline;
   }
 
   em.notcop {
     display: none;
+  }
+
+  em.cop {
+    color: rgb(10, 62, 99);;
+  }
+
+  span#margebib {
+    margin-left: 5em;
   }

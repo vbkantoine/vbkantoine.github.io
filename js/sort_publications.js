@@ -149,8 +149,8 @@ function compile_bib_n(reference) {
 }
 
 function plot_bib_n(bib_n){
-    texth = bib_n.replace('\n','<br>&nbsp;&nbsp;');
-    return texth ;
+    texth = bib_n.replace('\n','<span id="margebib">').replace('},','</span><span id="margebib">');
+    return texth +'</span>';
 }
 
 
@@ -273,7 +273,7 @@ function listtoHTML(sorted_references) {
             htmltext = htmltext + '<em class="circle" id="'+IdName+'"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
             htmltext = htmltext + '<div class="mytext">';
             if (reference.pdf) {
-                htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">pdf</a>' ;
+                htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'"> view pdf</a>' ;
             }
             //htmltext = htmltext + ' <a class="link-hid-" id="bib" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
             var bib_n = compile_bib_n(reference);
@@ -281,7 +281,7 @@ function listtoHTML(sorted_references) {
             htmltext = htmltext + '<div id="zonebib">';
             htmltext = htmltext + plot_bib_n(bib_n);
             htmltext = htmltext + '</div>';
-            htmltext = htmltext + '<a class="link-hid-" id="bib" onmouseout="'+"funct_out('"+IdName+"')"+'" onclick="'+"funct_dict('"+IdName+"')"+'">copy bibtex<em class="hid-copied notcop">: copied &#10003;</em></a>' ;
+            htmltext = htmltext + '<a class="link-hid-" id="bib" onmouseout="'+"funct_out('"+IdName+"')"+'" onclick="'+"funct_dict('"+IdName+"')"+'"> copy bibtex<em class="hid-copied notcop">: copied &#10003;</em></a>' ;
             htmltext = htmltext + '</div></em>';
             htmltext = htmltext + '</li>';
             i++;
