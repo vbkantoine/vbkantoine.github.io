@@ -200,10 +200,11 @@ function listtoHTML(sorted_references) {
             if (reference.pages) {
                 htmltext = htmltext + 'pp '+ reference.pages +'. ';
             }
-            if (i==0) {
-                htmltext = htmltext + '<div class="circle" id="exempleA"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
-                htmltext = htmltext + '<div class="mytext">Emensis .</div></div>' ;
-            }
+            //if (i==0) {
+            var IdName = 'cl-'+reference.year+i.toString() ;
+            htmltext = htmltext + '<div class="circle" id="'+IdName+'"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
+            htmltext = htmltext + '<div class="mytext">Emensis .</div></div>' ;
+            //}
             htmltext = htmltext + '</li>';
             i++;
         }
