@@ -172,7 +172,7 @@ function listtoHTML(sorted_references) {
     var htmltext = '';
     var i=0;
     for (const reference of sorted_references) {
-        if (reference.type=='article' || reference.type=='inproceedings') {
+        if (reference.entryType=='article' || reference.entryType=='inproceedings') {
             htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
             var auths = '';
             for (const author of reference.authors) {
@@ -210,10 +210,10 @@ function listtoHTML(sorted_references) {
             htmltext = htmltext + '<em class="circle" id="'+IdName+'"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
             htmltext = htmltext + '<div class="mytext">';
             if (reference.pdf) {
-                htmltext = htmltext + '<a id="link-hid-pdf" href="'+reference.pdf+'">pdf</a>' ;
+                htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">pdf</a>' ;
             }
-            htmltext = htmltext + '<a onclick="funct_dict.'+IdName+'">bibtex</a>' ;
-            var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+',\n' ;
+            htmltext = htmltext + '<a class="link-hid-" id="bib" href="#" onclick="funct_dict.'+IdName+'()">bibtex</a>' ;
+            var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
             entries = ["authors","title","volume","number","pages","doi","url"] ;
             function addEntry(arr,str) {
                 for (const entry in arr){
@@ -222,9 +222,9 @@ function listtoHTML(sorted_references) {
                     }
                 }
             }
-            if (reference.type=='article'){
+            if (reference.entryType=='article'){
                 entries.push('journal');
-            } else if (reference.type=='article') {
+            } else if (reference.entryType=='inproceedings') {
                 reference.booktitle = reference.journal ;
                 entries.push('booktitle');
                 entries.push('location');
