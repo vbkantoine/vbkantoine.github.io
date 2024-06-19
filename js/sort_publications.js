@@ -143,13 +143,13 @@ function compile_bib_n(reference) {
         entries.push('publisher');
     }
     bib_n = addEntry(entries, bib_n) ;
-    bib_n = bib_n + 'year = {'+reference.accepted+'},\n' ;
+    bib_n = bib_n + 'year = {'+reference.accepted+'}\n' ;
     bib_n = bib_n + '}';
    return bib_n ;
 }
 
 function plot_bib_n(bib_n){
-    texth = bib_n.replace('\n','<span id="margebib">').replace('},','</span><span id="margebib">');
+    texth = bib_n.replace('\n','<br><span id="margebib">').replace('},','</span><br><span id="margebib">');
     return texth +'</span>';
 }
 
@@ -273,7 +273,7 @@ function listtoHTML(sorted_references) {
             htmltext = htmltext + '<em class="circle" id="'+IdName+'"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
             htmltext = htmltext + '<div class="mytext">';
             if (reference.pdf) {
-                htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'"> view pdf</a>' ;
+                htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">view pdf</a>' ;
             }
             //htmltext = htmltext + ' <a class="link-hid-" id="bib" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
             var bib_n = compile_bib_n(reference);
