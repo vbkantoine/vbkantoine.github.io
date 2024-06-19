@@ -15,6 +15,13 @@
   display : block
 }
 
+.fa::before {
+    font-size: 15px;
+    font-family: monospace;
+    font-style: normal;
+    color:rgb(12, 92, 150);
+}
+
 .fa-plus-circle::before {
   content: "[+]";
 }
@@ -24,15 +31,21 @@
 }
 
 .fa:hover {
-    cursor : pointer
+    cursor : pointer;
+    text-decoration: underline;
   }
 
 .circle .fa-minus-circle + .mytext{
     margin: 0;
     padding: 6px;
-    border: 1px inset;
+    border: 0.8px inset;
+    border-color: #3d3b3b;
     text-align: left;
     direction: ltr;
     background: #f2f6f8 none repeat-x;
     font-size: 12px;
+  }
+
+  .link-hid-:hover {
+    cursor: pointer;
   }
