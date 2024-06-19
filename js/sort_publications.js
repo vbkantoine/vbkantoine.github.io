@@ -215,13 +215,13 @@ function funct_dict(key){
     navigator.clipboard.writeText(bib_dicts[key]);
     let oExemple =  document.getElementById(key);
     aCircle = oExemple.getElementsByClassName("hid-copied");
-    aCircle.classList.replace("notcop", "cop");
+    aCircle.setAttribute("class", "cop");
 }
 function funct_out(key){
     let oExemple =  document.getElementById(key);
     aCircle = oExemple.getElementsByClassName("hid-copied");
     setTimeout(function(){
-        aCircle.classList.replace("cop", "notcop");
+        aCircle.setAttribute("class", "notcop");
     }, 500);
     //console.log("DOG");
 }
