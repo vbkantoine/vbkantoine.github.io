@@ -294,7 +294,7 @@ function listtoHTML(sorted_references) {
             htmltext = htmltext + '<em class="circle" id="'+IdName+'"><i class="fa fa-plus-circle" aria-hidden="true"></i>' ;
             htmltext = htmltext + '<div class="mytext">';
             if (reference.pdf) {
-                htmltext = htmltext + '<a class="link-hid-" id="pdf" href="'+reference.pdf+'">view pdf</a>&ensp;/&ensp;' ;
+                htmltext = htmltext + '<a class="link-hid-" id="pdf" target="_blank" href="'+reference.pdf+'">view pdf</a>&ensp;/&ensp;' ;
             }
             htmltext = htmltext + '<a class="link-hid-" id="bib" onmouseout="'+"funct_out('"+IdName+"')"+'" onclick="'+"funct_dict('"+IdName+"')"+'">copy bibtex<em class="hid-copied notcop">: copied &#10003;</em></a>' ;
             //htmltext = htmltext + ' <a class="link-hid-" id="bib" onclick="'+"funct_dict('"+IdName+"')"+'">bibtex</a>' ;
