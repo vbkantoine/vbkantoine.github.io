@@ -268,10 +268,10 @@ function listtoHTML(sorted_references) {
             htmltext = htmltext+auths
             var link1 = '', link2 = '';
             if (reference.doi) {
-                link1 = '<a title="'+reference.doi+'" href="https://doi.org/'+reference.doi+'">';
+                link1 = '<a title="'+reference.doi+'" target="_blank" href="https://doi.org/'+reference.doi+'">';
                 link2 = '</a>';
             } else if (reference.url) {
-                link1 = '<a title="'+reference.url+'" href="'+ reference.url +'">' ;
+                link1 = '<a title="'+reference.url+'" target="_blank" href="'+ reference.url +'">' ;
                 link2 = '</a>';
             }
             htmltext = htmltext + '<em id="titlearticle">'+link1+reference.title+link2+'</em>, ';
@@ -318,7 +318,7 @@ function listtoHTML_contrib(sorted_references) {
             htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
             var link1 = '', link2 = '';
             if (reference.url) {
-                link1 = '<a href="'+ reference.url +'">' ;
+                link1 = '<a target="_blank" title="'+reference.url+'" href="'+ reference.url +'">' ;
                 link2 = '</a>';
             }
             htmltext = htmltext + '<strong>' + reference.title + '</strong> (' + reference.journal+'). ';
