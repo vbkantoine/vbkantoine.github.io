@@ -209,7 +209,7 @@ function sortSeminars(references) {
             var instref = {} ;
             instref.years = [] ;
             instref.locations = [] ;
-            instref.url = []
+            instref.url = [] ;
             var ititle = i ;
             instref.title = references[ititle].title ;
             instref.journal = references[ititle].journal ;
