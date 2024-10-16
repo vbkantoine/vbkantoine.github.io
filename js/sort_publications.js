@@ -116,7 +116,7 @@ function extractReferencesFromBibtex(bibtex) {
 
 function compile_bib_n(reference) {
     var bib_n = '@'+reference.type+'{'+reference.authors[0].split(',')[0].replace(/\s+/g, '')+reference.accepted+',\n' ;
-    bib_n = bib_n + 'authors = {' ;
+    bib_n = bib_n + 'author = {' ;
     for (var l=0; l<reference.authors.length; l++) {
         if (l>0){
             bib_n = bib_n + ' and ';
