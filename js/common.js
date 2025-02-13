@@ -20,9 +20,9 @@ function readTextFile2(file) {
 
 function add_commons(){
   var headdiv = readTextFile2('./common/headdiv.html');
-  document.getElementsById("container").innerHTML = headdiv;
+  document.getElementById("container").innerHTML = headdiv;
   var header = readTextFile2('./common/header.html');
-  document.getElementsByClassName("header").innerHTML = header;
+  document.getElementById("header").innerHTML = header;
   // var foot
   console.log(document.getElementsByClassName("header"));
 }
