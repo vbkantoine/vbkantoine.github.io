@@ -27,15 +27,15 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
 
-function add_commons(){
-  var headdiv = readTextFile2('./common/headdiv.html');
-  document.getElementsByClassName("container").innerHTML = headdiv;
-  var header = readTextFile2('./common/header.html');
-  document.getElementsByClassName("header").innerHTML = header;
-  // var foot
-}
+// function add_commons(){
+//   var headdiv = readTextFile2('./common/headdiv.html');
+//   document.getElementsByClassName("container").innerHTML = headdiv;
+//   var header = readTextFile2('./common/header.html');
+//   document.getElementsByClassName("header").innerHTML = header;
+//   // var foot
+// }
 
-add_commons()
+// add_commons()
 
 /*
 function readTextFile(file) {
