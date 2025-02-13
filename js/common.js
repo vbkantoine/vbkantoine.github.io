@@ -17,13 +17,13 @@ function readTextFile2(file) {
   //}
 }
 
-// document.addEventListener('DOMContentLoaded',function(){
-//     var headdiv = readTextFile2('./common/headdiv.html');
-//     document.getElementById("container").innerHTML = headdiv;
-//     var header = readTextFile2('./common/header.html');
-//     document.getElementById("header").innerHTML = header;
-//     // var foot
-// });
+document.addEventListener('DOMContentLoaded',function(){
+    var headdiv = readTextFile2('./common/headdiv.html');
+    document.getElementById("container").innerHTML = headdiv;
+    var header = readTextFile2('./common/header.html');
+    document.getElementById("header").innerHTML = header;
+    // var foot
+});
 
 
 
