@@ -19,9 +19,9 @@ function readTextFile2(file) {
 
 document.addEventListener('DOMContentLoaded',function(){
     var headdiv = readTextFile2('./common/headdiv.html');
-    document.getElementsByClassName("container").innerHTML = headdiv;
+    document.getElementById("container").innerHTML = headdiv;
     var header = readTextFile2('./common/header.html');
-    document.getElementsByClassName("header").innerHTML = header;
+    document.getElementById("header").innerHTML = header;
     // var foot
 });
 
@@ -33,6 +33,7 @@ function add_commons(){
   var header = readTextFile2('./common/header.html');
   document.getElementsByClassName("header").innerHTML = header;
   // var foot
+  console.log(document.getElementsByClassName("header"));
 }
 
 add_commons()
