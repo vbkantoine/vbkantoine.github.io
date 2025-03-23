@@ -14,24 +14,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install TeXlive
-        run: sudo apt-get update && sudo apt-get install texlive texlive-publishers texlive-science latexmk cm-super
-      - name: LaTeX compile 1
-        working-directory: ${{ env.DIR }}
-        #run: latexmk -pdf -bibtex ${{ env.FILE }}
-        run: pdflatex ${{ env.FILE }};
-      - name: Bibtex compile
-        continue-on-error: true
-        working-directory: ${{ env.DIR }}
-        run: bibtex ${{ env.FILE }};
-      - name: Biblatex compile
-        if: failure()
-        continue-on-error: true
-        working-directory: ${{ env.DIR }}
-        run: biber ${{ env.FILE }};
-      - name: LaTeX compile 2
-        working-directory: ${{ env.DIR }}
-        run: pdflatex ${{ env.FILE }}; pdflatex ${{ env.FILE }};
+      # - name: Install TeXlive
+      #   run: sudo apt-get update && sudo apt-get install texlive texlive-publishers texlive-science latexmk cm-super
+      # - name: LaTeX compile 1
+      #   working-directory: ${{ env.DIR }}
+      #   #run: latexmk -pdf -bibtex ${{ env.FILE }}
+      #   run: pdflatex ${{ env.FILE }};
+      # - name: Bibtex compile
+      #   continue-on-error: true
+      #   working-directory: ${{ env.DIR }}
+      #   run: bibtex ${{ env.FILE }};
+      # - name: Biblatex compile
+      #   if: failure()
+      #   continue-on-error: true
+      #   working-directory: ${{ env.DIR }}
+      #   run: biber ${{ env.FILE }};
+      # - name: LaTeX compile 2
+      #   working-directory: ${{ env.DIR }}
+      #   run: pdflatex ${{ env.FILE }}; pdflatex ${{ env.FILE }};
+      - name: LaTex
+        uses: xu-cheng/texlive-action@v2
+        with:
+          run: |
+            cd ${{ env.DIR }}
+            pdflatex ${{ env.FILE }}
+            biber ${{ env.FILE }}
+            pdflatex ${{ env.FILE }}
       - name: move
         run: mkdir -p github_artifacts && mv ${{ env.DIR }}/${{ env.FILE }}.pdf ./github_artifacts/
       - name: Upload pdf as artifact
