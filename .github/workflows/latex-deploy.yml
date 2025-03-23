@@ -24,6 +24,11 @@ jobs:
         continue-on-error: true
         working-directory: ${{ env.DIR }}
         run: bibtex ${{ env.FILE }};
+      - name: Biblatex compile
+        if: failure()
+        continue-on-error: true
+        working-directory: ${{ env.DIR }}
+        run: biber ${{ env.FILE }};
       - name: LaTeX compile 2
         working-directory: ${{ env.DIR }}
         run: pdflatex ${{ env.FILE }}; pdflatex ${{ env.FILE }};

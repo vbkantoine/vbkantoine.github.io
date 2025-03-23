@@ -1,0 +1,43 @@
+\newcommand{\urlone}[2]{\href{#1}{#2}}
+\newcommand{\urlpers}[2]{\href{https://doi.org/#1}{#2}}
+\usepackage[babel=true]{csquotes}
+\usepackage[style=bibstyle,backend=biber,maxnames=5,sorting=ymdesc,alldates=long,date=long]{biblatex}
+\addbibresource{bibtex/bibtext.bib}
+
+\addbibresource{bibtex/bibcontribnat.bib}
+\addbibresource{bibtex/bibcontribinter.bib}
+
+\DeclareSourcemap{
+  \maps[datatype=bibtex]{
+    \map[overwrite]{
+      \perdatasource{bibtex/bibcontribnat.bib}
+      \step[fieldset=keywords, fieldvalue={,conf}, append]
+    }
+  }
+}
+\DeclareSourcemap{
+  \maps[datatype=bibtex]{
+    \map[overwrite]{
+      \perdatasource{bibtex/bibcontribnat.bib}
+      \step[fieldset=keywords, fieldvalue={,nat}, append]
+    }
+  }
+}
+\DeclareSourcemap{
+  \maps[datatype=bibtex]{
+    \map[overwrite]{
+      \perdatasource{bibtex/bibcontribinter.bib}
+      \step[fieldset=keywords, fieldvalue={,conf}, append]
+    }
+  }
+}
+\DeclareSourcemap{
+  \maps[datatype=bibtex]{
+    \map[overwrite]{
+      \perdatasource{bibtex/bibcontribinter.bib}
+      \step[fieldset=keywords, fieldvalue={,inter}, append]
+    }
+  }
+}
+
+

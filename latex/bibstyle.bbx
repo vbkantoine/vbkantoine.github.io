@@ -1,0 +1,250 @@
+% bibliography style biblatex
+\ProvidesFile{bibstyle.bbx}[2006/03/15 v1.0 biblatex citation style]
+
+%\RequireBibliographyStyle{numeric}
+
+
+
+
+\DeclareFieldFormat[inproceedings,incollection]{booktitle}{\emph{#1}}
+
+\DeclareDatamodelFields[type=field, datatype=literal, skipout=false]{accepted}
+\DeclareDatamodelFields[type=field, datatype=literal, skipout=false]{contribution}
+\DeclareDatamodelFields[type=field, datatype=literal, skipout=false]{location}
+\DeclareDatamodelFields[type=field, datatype=literal, skipout=false]{date}
+%
+%\DeclareSourcemap{
+%    \maps[datatype=bibtex]{
+%      \map{
+%        \step[fieldsource=accepted]
+%        \step[fieldset=accepted,origfieldval]
+%    }
+%  }
+%}
+\DeclareFieldFormat*{accepted}{#1}
+
+%DeclareDatamodelConstant[type=list]{nameparts}{prefix,family, suffix,given} %defaults nameparts declared
+
+\DeclareNameFormat{author}{%
+	%\ifthenelse{\equal{\solelylowercase{\substring{\namepartfamily}{1}{1}}}{v}}{TRUE}{FALSE}	
+	%\compare{\namepartfamily}{Van Biesbroeck}{yes}{no}
+	%{\itshape{\substring{\namepartfamily}{1}{1}.}}
+	\ifthenelse{\value{listcount}=1}{%
+	}{%
+		\ifthenelse{\value{listcount}<\value{liststop}}{%
+			\addcomma\space%
+		}{%
+			\space%		
+			and\space	
+		}%
+	}%	
+	\ifthenelse{\equal{\namepartgiven}{\givenname}}{%
+		{\bfseries{\namepartgiveni}\adddot\space\namepartfamily}%
+	}%
+	{%
+		{\namepartgiveni}\adddot\space\namepartfamily%
+	}%
+}
+
+\DefineBibliographyExtras{english}{%
+\protected\def\mkbibdatelong#1#2#3{%
+    \iffieldundef{#3}{%
+    	\printtext{NODAY}
+    }{%
+    \mkbibordinal{\thefield{#3}}%\stripzeros{\thefield{#3}}%
+       \iffieldundef{#2}{}{\nobreakspace}%
+    }%
+    \iffieldundef{#2}{}{%
+    	\mkbibmonth{\thefield{#2}}%
+       \iffieldundef{#1}{}{\space}%
+     }%
+    \stripzeros{\thefield{#1}}%
+}%
+}
+
+
+
+
+\DeclareFieldFormat[article]{title}{\textcouleursecondaire{#1}}
+\DeclareFieldFormat[inproceedings]{title}{#1}
+
+%\DeclareDatamodelFields[type=field, datatype=literal, skipout=false]{journal}
+
+\DeclareFieldAlias{journal}{journaltitle}
+\DeclareFieldFormat*{journaltitle}{\emph{#1}}
+
+%\DeclareDatamodelFields[type=field, datatype=literal, skipout=false]{journal}
+
+\DeclareFieldFormat*{contribution}{\textcouleursecondaire{#1}}
+\DeclareFieldFormat[inproceedings]{location}{#1}
+
+
+
+
+
+
+
+\DeclareBibliographyDriver{article}{%
+	\persitem{\printfield{year}}{%
+		\begin{minipage}[t]{\currentparitem}%
+    		\fontsize{\SUBtext}{\SUBbase}\selectfont%
+    		\textneutreprimaire{%
+				\printnames{author}%
+				\addcomma\space\newblock
+				\iffieldundef{doi}{%
+			        \iffieldundef{url}{%
+			        	\printfield{title}%
+			        }{%
+			        	\urlone{\thefield{url}}{\printfield{title}}%
+			        }%
+    			}{%
+			        \urlpers{\thefield{doi}}{\printfield{title}}%
+    			}%
+				\addcomma\space\newblock
+				\printfield{journaltitle}%
+				\iffieldundef{volume}{%
+					\newunit\newblock				
+				}{%
+					\addcomma\space\newblock
+					\iffieldundef{number}{%
+						\printfield{volume}%
+						\newunit\newblock					
+					}{%
+						\printfield{volume}\adddot\printfield{number}%
+						\newunit\newblock
+					}
+				}
+				\iffieldundef{accepted}{%
+					\printfield{year}%
+				}{%
+					\printfield{accepted}%
+				}%
+				\finentry
+			}%
+		\end{minipage}%
+	}%
+%	\finentry%
+}%
+
+%finentrypunct
+
+
+\DeclareBibliographyDriver{inproceedings}{%
+	\ifkeyword{conf}{%
+		\persitem{\printfield{year}}{%
+			\begin{minipage}[t]{\currentparitem}%
+				\fontsize{\SUBtext}{\SUBbase}\selectfont%
+				\textneutreprimaire{%
+					\textbf{\printfield{title}}\addspace%
+					\printtext{(}%
+			    	\iffieldundef{url}{%
+			       		\printfield{journaltitle}%
+			     	}{%
+				       	\urlone{\thefield{url}}{\printfield{journaltitle}}%
+			     	}%
+				    \printtext{)}%
+				    \newunit\newblock
+				    \printfield{contribution}%
+				    \newunit\newblock
+				    \printfield{location}%
+				    \newunit\newblock
+				    %\printdate\finentry%
+				    \printfield{date}\finentry%
+				}%
+			\end{minipage}%
+		}%
+	}{%
+		\persitem{\printfield{year}}{%
+			\begin{minipage}[t]{\currentparitem}%
+    			\fontsize{\SUBtext}{\SUBbase}\selectfont%
+	    		\textneutreprimaire{%
+					\printnames{author}%
+					\addcomma\space\newblock
+					\iffieldundef{doi}{%
+			    	    \iffieldundef{url}{%
+			        		\textcouleursecondaire{\printfield{title}}%
+				        }{%
+				        	\urlone{\thefield{url}}{\textcouleursecondaire{\printfield{title}}}%
+				        }%
+    				}{%
+			    	    \urlpers{\thefield{doi}}{\textcouleursecondaire{\printfield{title}}}%
+	    			}%
+					\addcomma\space\newblock
+					\printfield{journaltitle}%
+					\newunit\newblock
+					\printfield{year}\finentry%
+				}%
+			\end{minipage}%
+		}%
+	}%
+%
+}%
+
+
+
+\DeclareBibliographyDriver{conference}{%
+	\persitem{\printfield{year}}{%
+		\begin{minipage}[t]{\currentparitem}%
+    		\fontsize{\SUBtext}{\SUBbase}\selectfont%
+    		\textneutreprimaire{%
+				\printnames{author}%
+				\newunit\newblock
+				\iffieldundef{doi}{%
+			        \iffieldundef{url}{%
+			        	\printfield{title}%
+			        }{%
+			        	\urlone{\thefield{url}}{\printfield{title}}%
+			        }%
+    			}{%
+			        \urlpers{\thefield{doi}}{\printfield{title}}%
+    			}%
+				\newunit\newblock
+				\printfield{booktitle}%
+				\newunit\newblock
+				\printfield{year}TTTTTTTTTT%
+			}%
+		\end{minipage}%
+	}%
+	\finentry%
+}%
+
+
+
+
+\DeclareSortingTemplate{ymdesc}{
+	\sort[direction=descending]{\field{year}}
+	\sort[direction=descending]{\field{month}}
+	\sort[direction=descending]{\field{day}}
+}
+
+\defbibheading{subsection}{%
+\subsection*{#1}
+}
+\defbibheading{section}{%
+\section*{#1}
+}
+
+\defbibenvironment{bibliography}
+{\list
+{}
+{%
+\setlength{\labelwidth}{0pt}%
+\setlength{\biblabelsep}{0pt}%
+\setlength{\bibitemsep}{0pt}%
+\setlength{\bibhang}{0pt}%
+\setlength{\leftmargin}{\labelwidth}%
+\setlength{\labelsep}{\biblabelsep}%
+\addtolength{\leftmargin}{\labelsep}%
+\setlength{\itemsep}{\bibitemsep}%
+\setlength{\parsep}{\bibparsep}}%
+}
+{\endlist}
+{ 
+}
+
+
+
+
+
+
+\endinput

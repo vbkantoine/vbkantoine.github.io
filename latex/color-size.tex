@@ -1,0 +1,41 @@
+\definecolor{bleuprimaire}{RGB}{9,68,114}
+\definecolor{bleusecondaire}{RGB}{12,92,150}
+\definecolor{grisprimaire}{RGB}{35,31,32}
+\definecolor{grissecondaire}{RGB}{99,96,97}
+
+\newcommand{\neutreprimaire}{\color{grisprimaire}}
+\newcommand{\neutresecondaire}{\color{grissecondaire}}
+\newcommand{\couleurprimaire}{\color{bleuprimaire}}
+\newcommand{\couleursecondaire}{\color{bleusecondaire}}
+
+\newcommand{\textneutreprimaire}[1]{\textcolor{grisprimaire}{#1}}
+\newcommand{\textneutresecondaire}[1]{\textcolor{grissecondaire}{#1}}
+\newcommand{\textcouleurprimaire}[1]{\textcolor{bleuprimaire}{#1}}
+\newcommand{\textcouleursecondaire}[1]{\textcolor{bleusecondaire}{#1}}
+
+\def\HUGEtext{20} \def\HUGEbase{22.4}   % 23 - 27.6
+\def\SECTIONtext{13} \def\SECTIONbase{15.6} % 14 - 16.8
+\def\SUBSECTIONtext{12} \def\SUBSECTIONbase{13.2}
+\def\NORMALtext{11} \def\NORMALbase{12.6}
+\def\SUBtext{10} \def\SUBbase{12}
+\def\INTERtext{9} \def\INTERbase{10.8}
+\def\NOTEtext{8} \def\NOTEbase{9.6}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\newlength{\indentsubtitre}
+\setlength{\indentsubtitre}{0.5cm}
+\newlength{\parsubtitre}
+\setlength{\parsubtitre}{\textwidth}
+% \setlength{\parsubtitre}{\textwidth minus 2\indentsubtitre}
+\addtolength{\parsubtitre}{-2\indentsubtitre}
+\newlength{\rulesection}
+\setlength{\rulesection}{1.92px}
+\newlength{\indentdescription}
+\settowidth{\indentdescription}{\textbf{0000}}
+\newlength{\descriptionpar}
+\setlength{\descriptionpar}{\textwidth}
+\addtolength{\descriptionpar}{-\indentdescription}
+% \setlength{\descriptionpar}{\textwidth minus 1\indentdescription}
+\newlength{\sepitem}
+\settowidth{\sepitem}{\textbf{M}}
