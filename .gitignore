@@ -6,7 +6,7 @@
 *.bcf
 *.log
 *.out
-*.pdf
+latex/*.pdf
 *.xml
 *.gz
 *.bbl
