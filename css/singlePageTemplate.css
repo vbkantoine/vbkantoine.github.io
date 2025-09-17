@@ -26,6 +26,10 @@ body {
 	color: rgb(12, 92, 150);
 	text-decoration: none;
 }
+.name a {
+	color: rgb(12, 92, 150);
+	text-decoration: none;
+}
 h1.name  {
 	font-weight: bold
 }
