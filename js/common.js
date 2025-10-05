@@ -27,7 +27,7 @@ function add_commons(){
   var annee = aujd.getFullYear();
   var foot = "&copy;"+ annee +" - <strong>Antoine Van Biesbroeck&nbsp;</strong>";
   document.getElementsByClassName("copyright").innerHTML = foot;
-  console.log(document.getElementsByClassName("header"));
+  console.log(document.getElementsByClassName("copyright"));
 }
 
 document.addEventListener('DOMContentLoaded', add_commons);
