@@ -23,7 +23,10 @@ function add_commons(){
   document.getElementById("container").innerHTML = headdiv;
   var header = readTextFile2('./common/header.html');
   document.getElementById("header").innerHTML = header;
-  // var foot
+  var aujd = new Date();
+  var annee = aujd.getFullYear();
+  var foot = "&copy;"+ annee +" - <strong>Antoine Van Biesbroeck&nbsp;</strong>";
+  document.getElementsByClassName("copyright").innerHTML = foot;
   console.log(document.getElementsByClassName("header"));
 }
 
