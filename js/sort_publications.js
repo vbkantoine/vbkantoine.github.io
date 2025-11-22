@@ -380,7 +380,7 @@ function readTextFile(file) {
       if(rawFile.readyState === 4)  {
         if(rawFile.status === 200 || rawFile.status == 0) {
           allText = rawFile.responseText;
-          console.log(allText);
+        //   console.log(allText);
          }
       }
     }
