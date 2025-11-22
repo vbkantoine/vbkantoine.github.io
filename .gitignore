@@ -10,3 +10,4 @@ latex/*.pdf
 *.xml
 *.gz
 *.bbl
+*.blg

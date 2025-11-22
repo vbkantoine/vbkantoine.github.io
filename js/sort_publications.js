@@ -252,11 +252,11 @@ function funct_out(key){
 }
 
 
-function listtoHTML(sorted_references) {
+function listtoHTML(sorted_references, type) {
     var htmltext = '';
     var i=0;
     for (const reference of sorted_references) {
-        if (reference.type=='article' || reference.type=='inproceedings') {
+        if (reference.type==type) { // && type=='article') || (reference.type=='inproceedings' && type=='inproceed')) {
             htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
             var auths = '';
             for (const author of reference.authors) {
@@ -436,7 +436,9 @@ console.log(String(bibtext));
 
 var extractedReferences = extractReferencesFromBibtex(bibtext);
 var sorted_references = sortYearMonth(extractedReferences);
-var httext = listtoHTML(sorted_references);
+var httext_article = listtoHTML(sorted_references,'article');
+var httext_procs = listtoHTML(sorted_references,'inproceddings');
+var httext = '<h4 class="finaltext">Regular paper</h4>'+httext_article+'<h4 class="finaltext">Proceedings</h4>'+httext_procs
 //alert(console.log(sorted_references));
 console.log(httext);
 
