@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded',function(){
 // EXEMPLE 1
 //////////////////////////////////////////////
 //On prende le bloc d'id exempleA colone 1
-let oExemple =  document.getElementById("lipublications"),
+let oExemple =  document.getElementById("ullistpublicationsregular"),
         //On recherche les éléments de class fa soit tes boutons
         aCircle = oExemple.getElementsByClassName("fa");
 //Pour tous éléments trouvé ont leur assigne l'événement click
@@ -26,7 +26,13 @@ for(let oBt of aCircle){
 }//for
 });
 
-
+document.addEventListener('DOMContentLoaded',function(){
+let oExemple =  document.getElementById("ullistpublicationsregularprocs"),
+        aCircle = oExemple.getElementsByClassName("fa");
+for(let oBt of aCircle){
+        oBt.addEventListener('click',showtext);
+}
+});
 
 /*
 function addOnClick(IdName) {
