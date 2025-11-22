@@ -425,8 +425,8 @@ function show(){
 //console.log(read('./bibtex.bib'));
 
 var bibtext = readTextFile('./latex/bibtex/bibtext.bib') ;
-console.log(typeof bibtext);
-console.log(String(bibtext));
+//console.log(typeof bibtext);
+//console.log(String(bibtext));
 
 /*
   const input = document.getElementById("test34");
@@ -437,28 +437,27 @@ console.log(String(bibtext));
 var extractedReferences = extractReferencesFromBibtex(bibtext);
 var sorted_references = sortYearMonth(extractedReferences);
 var httext_article = listtoHTML(sorted_references,'article');
-var httext_procs = listtoHTML(sorted_references,'inproceddings');
-var httext = '<h4 class="finaltext">Regular paper</h4>'+httext_article+'<h4 class="finaltext">Proceedings</h4>'+httext_procs
+var httext_procs = listtoHTML(sorted_references,'inproceedings');
 //alert(console.log(sorted_references));
-console.log(httext);
-
-document.getElementById("ullistpublications").innerHTML = httext;
+//console.log(httext);
+document.getElementById("ullistpublicationsregular").innerHTML = httext_article;
+document.getElementById("ullistpublicationsprocs").innerHTML = httext_procs;
 
 var bib_contrib_inter = readTextFile('./latex/bibtex/bibcontribinter.bib') ;
 var extr_contrib_inter = extractReferencesFromBibtex(bib_contrib_inter);
 var sort_contrib_inter = sortYearMonth(extr_contrib_inter);
 var ht_contrib_inter = listtoHTML_contrib(sort_contrib_inter);
-console.log(ht_contrib_inter);
+// console.log(ht_contrib_inter);
 document.getElementById("ullistcontribinter").innerHTML = ht_contrib_inter;
 
 var bib_contrib_nat = readTextFile('./latex/bibtex/bibcontribnat.bib') ;
 var extr_contrib_nat = extractReferencesFromBibtex(bib_contrib_nat);
 var sort_contrib_nat = sortYearMonth(extr_contrib_nat);
 var ht_contrib_nat = listtoHTML_contrib(sort_contrib_nat);
-console.log(ht_contrib_nat);
+// console.log(ht_contrib_nat);
 document.getElementById("ullistcontribnat").innerHTML = ht_contrib_nat;
 
 var ht_seminar_nat = listtoHTML_seminars(sort_contrib_nat);
-console.log(ht_seminar_nat);
+// console.log(ht_seminar_nat);
 document.getElementById("ullistseminars").innerHTML = ht_seminar_nat;
 
