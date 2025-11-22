@@ -27,7 +27,7 @@ for(let oBt of aCircle){
 });
 
 document.addEventListener('DOMContentLoaded',function(){
-let oExemple =  document.getElementById("ullistpublicationsregularprocs"),
+let oExemple =  document.getElementById("ullistpublicationsprocs"),
         aCircle = oExemple.getElementsByClassName("fa");
 for(let oBt of aCircle){
         oBt.addEventListener('click',showtext);
