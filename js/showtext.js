@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded',function(){
 // EXEMPLE 1
 //////////////////////////////////////////////
 //On prende le bloc d'id exempleA colone 1
-let oExemple =  document.getElementById("ullistpublications"),
+let oExemple =  document.getElementById("lipublications"),
         //On recherche les éléments de class fa soit tes boutons
         aCircle = oExemple.getElementsByClassName("fa");
 //Pour tous éléments trouvé ont leur assigne l'événement click

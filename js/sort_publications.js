@@ -257,7 +257,7 @@ function listtoHTML(sorted_references, type) {
     var i=0;
     for (const reference of sorted_references) {
         if (reference.type==type) { // && type=='article') || (reference.type=='inproceedings' && type=='inproceed')) {
-            htmltext = htmltext + '<li><strong>'+reference.year+'</strong>. ';
+            htmltext = htmltext + '<li id="lipublications"><strong>'+reference.year+'</strong>. ';
             var auths = '';
             for (const author of reference.authors) {
                 var lastfirst = author.split(',').map(function(name) {
