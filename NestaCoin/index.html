@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compteur de NestaCoin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #d4af37; /* Couleur or pour le côté crypto */
+        }
+        .add-player-section {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .player-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .player-name {
+            font-size: 18px;
+            font-weight: bold;
+            flex-grow: 1;
+        }
+        .score-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .score {
+            font-size: 20px;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+        .btn-minus {
+            background-color: #e74c3c;
+        }
+        .btn-minus:hover {
+            background-color: #c0392b;
+        }
+        .btn-plus {
+            background-color: #2ecc71;
+        }
+        .btn-plus:hover {
+            background-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>💰 Compteur de NestaCoin</h1>
+
+    <div class="add-player-section">
+        <input type="text" id="playerNameInput" placeholder="Nom du joueur..." onkeypress="handleKeyPress(event)">
+        <button onclick="addPlayer()">Ajouter un joueur</button>
+    </div>
+
+    <div id="playersContainer">
+        <!-- Les joueurs apparaîtront ici -->
+    </div>
+
+    <script>
+        // Fonction pour ajouter un joueur
+        function addPlayer() {
+            const input = document.getElementById('playerNameInput');
+            const playerName = input.value.trim();
+
+            if (playerName === "") {
+                alert("Veuillez entrer un nom pour le joueur.");
+                return;
+            }
+
+            // Création de l'élément contenant le joueur
+            const playerCard = document.createElement('div');
+            playerCard.className = 'player-card';
+
+            // Nom du joueur
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'player-name';
+            nameDiv.textContent = playerName;
+
+            // Section du score (boutons et affichage)
+            const scoreSection = document.createElement('div');
+            scoreSection.className = 'score-section';
+
+            // Bouton Moins
+            const btnMinus = document.createElement('button');
+            btnMinus.className = 'btn-minus';
+            btnMinus.textContent = '-';
+            btnMinus.onclick = function() {
+                updateScore(scoreDisplay, -1);
+            };
+
+            // Affichage du score (commence à 0)
+            const scoreDisplay = document.createElement('div');
+            scoreDisplay.className = 'score';
+            scoreDisplay.textContent = '0';
+
+            // Bouton Plus
+            const btnPlus = document.createElement('button');
+            btnPlus.className = 'btn-plus';
+            btnPlus.textContent = '+';
+            btnPlus.onclick = function() {
+                updateScore(scoreDisplay, 1);
+            };
+
+            // Assemblage des éléments
+            scoreSection.appendChild(btnMinus);
+            scoreSection.appendChild(scoreDisplay);
+            scoreSection.appendChild(btnPlus);
+
+            playerCard.appendChild(nameDiv);
+            playerCard.appendChild(scoreSection);
+
+            // Ajout du joueur à la page
+            document.getElementById('playersContainer').appendChild(playerCard);
+
+            // Vider le champ de texte
+            input.value = "";
+            input.focus();
+        }
+
+        // Fonction pour mettre à jour le score
+        function updateScore(scoreElement, change) {
+            let currentScore = parseInt(scoreElement.textContent);
+            currentScore += change;
+            scoreElement.textContent = currentScore;
+        }
+
+        // Permet d'ajouter un joueur en appuyant sur la touche "Entrée"
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addPlayer();
+            }
+        }
+    </script>
+</body>
+</html>
