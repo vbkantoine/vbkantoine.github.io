@@ -5,24 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NestaCoin Dashboard</title>
     <style>
+        /* --- STYLES GÉNÉRAUX DE LA PAGE --- */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #333;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
+            position: relative; /* Nécessaire pour contenir la pluie */
             
             /* --- FOND D'ÉCRAN MOSAÏQUE --- */
             background-image: url('keypred.JPG'); 
             background-size: 1.5cm 1.5cm;
             background-repeat: repeat;
             background-color: #1a1a1a; 
+            overflow-x: hidden; /* Empêche les barres de défilement horizontales pendant la pluie */
         }
 
-        /* --- STYLE DU LOGO --- */
+        /* --- STYLE DE LA PLUIE DE DOLLARS --- */
+        .money-rain-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Crucial : permet de cliquer sur les boutons DERRIÈRE la pluie */
+            z-index: 1000; /* Par-dessus tout, sauf les interactions utilisateur grâces à pointer-events */
+            overflow: hidden;
+        }
+
+        .dollar-bill {
+            position: absolute;
+            top: -100px; /* Démarre au-dessus de l'écran */
+            user-select: none;
+            pointer-events: none;
+            opacity: 0.8; /* Légère transparence pour ne pas trop masquer le contenu */
+            /* L'animation est définie en JavaScript pour être aléatoire */
+        }
+
+        /* Keyframes pour la chute et le balancement */
+        @keyframes fall {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            20% {
+                transform: translateY(20vh) translateX(15px) rotate(45deg);
+            }
+            40% {
+                transform: translateY(40vh) translateX(-15px) rotate(90deg);
+            }
+            60% {
+                transform: translateY(60vh) translateX(15px) rotate(135deg);
+            }
+            80% {
+                transform: translateY(80vh) translateX(-15px) rotate(180deg);
+            }
+            100% {
+                transform: translateY(110vh) translateX(0) rotate(225deg);
+                opacity: 0.6; /* Fane un peu vers la fin */
+            }
+        }
+
+        /* --- STYLE DU CONTENU INTERACTIF (inchangé mais important de le garder accessible) --- */
         .logo-container {
             text-align: center;
             margin-bottom: 30px;
+            position: relative;
+            z-index: 10; /* Assure la lisibilité sur la pluie */
         }
 
         .main-logo {
@@ -36,6 +86,8 @@
             justify-content: center;
             margin-bottom: 20px;
             gap: 10px;
+            position: relative;
+            z-index: 10;
         }
         
         input[type="text"] {
@@ -64,6 +116,11 @@
             transform: scale(0.95);
         }
         
+        #playersContainer {
+            position: relative;
+            z-index: 10;
+        }
+
         .player-card {
             display: flex;
             align-items: center;
@@ -118,12 +175,13 @@
         .btn-plus { background-color: #27ae60; }
         .btn-plus:active { transform: translateY(2px); box-shadow: none; }
 
-        /* --- STYLE DU BOUTON RESET --- */
         .reset-section {
             text-align: center;
             margin-top: 30px;
             padding-top: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            z-index: 10;
         }
 
         .btn-reset {
@@ -147,6 +205,8 @@
 </head>
 <body>
 
+    <div class="money-rain-container" id="moneyRainContainer"></div>
+
     <div class="logo-container">
         <a href="fullcoin.png"><img src="logo.png" alt="NestaCoin Logo" class="main-logo"></a>
     </div>
@@ -164,15 +224,14 @@
     </div>
 
     <script>
-        // Tableau qui contient l'état du jeu
+        // --- LOGIQUE DE STOCKAGE ET DE SCORE (Existante) ---
         let playersData = [];
 
-        // Au chargement de la page, on récupère les données sauvegardées
         window.onload = function() {
             loadState();
+            startMoneyRain(); // Démarre la pluie au chargement
         };
 
-        // Charger les données depuis le localStorage (équivalent cookie)
         function loadState() {
             const savedData = localStorage.getItem('nestaCoinState');
             if (savedData) {
@@ -181,88 +240,114 @@
             }
         }
 
-        // Sauvegarder les données dans le navigateur
         function saveState() {
             localStorage.setItem('nestaCoinState', JSON.stringify(playersData));
         }
 
-        // Ajouter un joueur
         function addPlayer() {
             const input = document.getElementById('playerNameInput');
             const playerName = input.value.trim();
-
             if (playerName === "") return;
-
-            // Ajoute le joueur au début du tableau
             playersData.unshift({ name: playerName, score: 0 });
-            
-            saveState(); // On sauvegarde
-            renderPlayers(); // On met à jour l'affichage
-
+            saveState();
+            renderPlayers();
             input.value = "";
             input.focus();
         }
 
-        // Modifier le score
         function updateScore(index, change) {
             playersData[index].score += change;
-            saveState(); // On sauvegarde à chaque modification
-            renderPlayers(); // On met à jour l'affichage
+            saveState();
+            renderPlayers();
         }
 
-        // Réinitialiser la partie
         function resetGame() {
             if (confirm("🚨 Es-tu sûr de vouloir effacer tous les joueurs et les scores ?")) {
-                playersData = []; // On vide le tableau
-                saveState(); // On sauvegarde le tableau vide
-                renderPlayers(); // On vide l'affichage
+                playersData = [];
+                saveState();
+                renderPlayers();
             }
         }
 
-        // Afficher tous les joueurs en lisant le tableau de données
         function renderPlayers() {
             const container = document.getElementById('playersContainer');
-            container.innerHTML = ''; // On vide le conteneur avant de tout redessiner
-
+            container.innerHTML = '';
             playersData.forEach((player, index) => {
                 const playerCard = document.createElement('div');
                 playerCard.className = 'player-card';
-
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'player-name';
                 nameDiv.textContent = player.name;
-
                 const scoreSection = document.createElement('div');
                 scoreSection.className = 'score-section';
-
                 const btnMinus = document.createElement('button');
                 btnMinus.className = 'control-btn btn-minus';
                 btnMinus.textContent = '-';
                 btnMinus.onclick = function() { updateScore(index, -1); };
-
                 const scoreDisplay = document.createElement('div');
                 scoreDisplay.className = 'score';
                 scoreDisplay.textContent = player.score;
-
                 const btnPlus = document.createElement('button');
                 btnPlus.className = 'control-btn btn-plus';
                 btnPlus.textContent = '+';
                 btnPlus.onclick = function() { updateScore(index, 1); };
-
                 scoreSection.appendChild(btnMinus);
                 scoreSection.appendChild(scoreDisplay);
                 scoreSection.appendChild(btnPlus);
                 playerCard.appendChild(nameDiv);
                 playerCard.appendChild(scoreSection);
-
                 container.appendChild(playerCard);
             });
         }
 
-        // Valider avec la touche Entrée
         function handleKeyPress(event) {
             if (event.key === 'Enter') addPlayer();
         }
+
+        // --- LOGIQUE DE LA PLUIE DE DOLLARS (Nouveau) ---
+        const rainContainer = document.getElementById('moneyRainContainer');
+        const dollarImgSrc = 'dollar.png'; // Assure-toi que ce fichier existe
+
+        function createDollarBill() {
+            const bill = document.createElement('img');
+            bill.src = dollarImgSrc;
+            bill.classList.add('dollar-bill');
+
+            // --- Propriétés aléatoires pour chaque billet ---
+
+            // Position horizontale de départ (entre 0% et 100% de la largeur)
+            bill.style.left = Math.random() * 100 + 'vw';
+
+            // Taille aléatoire (entre 60px et 120px de large pour créer de la profondeur)
+            const width = Math.random() * 60 + 60;
+            bill.style.width = width + 'px';
+            bill.style.height = 'auto'; // Garde le ratio d'aspect
+
+            // Durée de chute aléatoire (vitesse) : entre 4s et 9s
+            const duration = Math.random() * 5 + 4;
+            
+            // Rotation de départ aléatoire
+            const startRotation = Math.random() * 360;
+
+            // Application de l'animation CSS Keyframes avec les valeurs aléatoires
+            bill.style.animation = `fall ${duration}s linear infinite`;
+            bill.style.transform = `rotate(${startRotation}deg)`; // Définit la rotation initiale
+
+            rainContainer.appendChild(bill);
+
+            // Nettoyage : supprimer le billet du DOM une fois qu'il a fini de chuter
+            // (setTimeout matching duration * 1000ms)
+            setTimeout(() => {
+                bill.remove();
+            }, duration * 1000);
+        }
+
+        function startMoneyRain() {
+            // Crée un nouveau billet toutes les 200ms pour une pluie dense
+            // Ajuste ce nombre (plus bas = plus de billets) selon tes goûts
+            setInterval(createDollarBill, 200); 
+        }
+
     </script>
 </body>
 </html>
