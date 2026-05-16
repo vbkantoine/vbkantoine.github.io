@@ -26,9 +26,9 @@
         }
 
         .main-logo {
-            max-width: 100%; /* S'adapte à la largeur de l'écran */
+            max-width: 100%;
             height: auto;
-            filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.5)); /* Ajoute une ombre sous le logo */
+            filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.5));
         }
         
         .add-player-section {
@@ -54,7 +54,7 @@
             cursor: pointer;
             border: none;
             border-radius: 8px;
-            background: linear-gradient(135deg, #f39c12, #d35400); /* Dégradé orange/or */
+            background: linear-gradient(135deg, #f39c12, #d35400);
             color: white;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             transition: transform 0.1s;
@@ -68,12 +68,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background-color: rgba(255, 255, 255, 0.95); /* Légèrement transparent */
+            background-color: rgba(255, 255, 255, 0.95);
             padding: 15px;
             margin-bottom: 12px;
             border-radius: 12px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-            border: 2px solid #d4af37; /* Bordure dorée */
+            border: 2px solid #d4af37;
         }
         
         .player-name {
@@ -118,6 +118,31 @@
         .btn-plus { background-color: #27ae60; }
         .btn-plus:active { transform: translateY(2px); box-shadow: none; }
 
+        /* --- STYLE DU BOUTON RESET --- */
+        .reset-section {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-reset {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #c0392b;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: background-color 0.2s;
+        }
+
+        .btn-reset:hover {
+            background-color: #a53125;
+        }
+
     </style>
 </head>
 <body>
@@ -134,55 +159,107 @@
     <div id="playersContainer">
         </div>
 
+    <div class="reset-section">
+        <button class="btn-reset" onclick="resetGame()">🔄 Réinitialiser la partie</button>
+    </div>
+
     <script>
+        // Tableau qui contient l'état du jeu
+        let playersData = [];
+
+        // Au chargement de la page, on récupère les données sauvegardées
+        window.onload = function() {
+            loadState();
+        };
+
+        // Charger les données depuis le localStorage (équivalent cookie)
+        function loadState() {
+            const savedData = localStorage.getItem('nestaCoinState');
+            if (savedData) {
+                playersData = JSON.parse(savedData);
+                renderPlayers();
+            }
+        }
+
+        // Sauvegarder les données dans le navigateur
+        function saveState() {
+            localStorage.setItem('nestaCoinState', JSON.stringify(playersData));
+        }
+
+        // Ajouter un joueur
         function addPlayer() {
             const input = document.getElementById('playerNameInput');
             const playerName = input.value.trim();
 
             if (playerName === "") return;
 
-            const playerCard = document.createElement('div');
-            playerCard.className = 'player-card';
-
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'player-name';
-            nameDiv.textContent = playerName;
-
-            const scoreSection = document.createElement('div');
-            scoreSection.className = 'score-section';
-
-            const btnMinus = document.createElement('button');
-            btnMinus.className = 'control-btn btn-minus';
-            btnMinus.textContent = '-';
-            btnMinus.onclick = function() { updateScore(scoreDisplay, -1); };
-
-            const scoreDisplay = document.createElement('div');
-            scoreDisplay.className = 'score';
-            scoreDisplay.textContent = '0';
-
-            const btnPlus = document.createElement('button');
-            btnPlus.className = 'control-btn btn-plus';
-            btnPlus.textContent = '+';
-            btnPlus.onclick = function() { updateScore(scoreDisplay, 1); };
-
-            scoreSection.appendChild(btnMinus);
-            scoreSection.appendChild(scoreDisplay);
-            scoreSection.appendChild(btnPlus);
-            playerCard.appendChild(nameDiv);
-            playerCard.appendChild(scoreSection);
-
-            document.getElementById('playersContainer').prepend(playerCard); // Ajoute en haut de liste
+            // Ajoute le joueur au début du tableau
+            playersData.unshift({ name: playerName, score: 0 });
+            
+            saveState(); // On sauvegarde
+            renderPlayers(); // On met à jour l'affichage
 
             input.value = "";
             input.focus();
         }
 
-        function updateScore(scoreElement, change) {
-            let currentScore = parseInt(scoreElement.textContent);
-            currentScore += change;
-            scoreElement.textContent = currentScore;
+        // Modifier le score
+        function updateScore(index, change) {
+            playersData[index].score += change;
+            saveState(); // On sauvegarde à chaque modification
+            renderPlayers(); // On met à jour l'affichage
         }
 
+        // Réinitialiser la partie
+        function resetGame() {
+            if (confirm("🚨 Es-tu sûr de vouloir effacer tous les joueurs et les scores ?")) {
+                playersData = []; // On vide le tableau
+                saveState(); // On sauvegarde le tableau vide
+                renderPlayers(); // On vide l'affichage
+            }
+        }
+
+        // Afficher tous les joueurs en lisant le tableau de données
+        function renderPlayers() {
+            const container = document.getElementById('playersContainer');
+            container.innerHTML = ''; // On vide le conteneur avant de tout redessiner
+
+            playersData.forEach((player, index) => {
+                const playerCard = document.createElement('div');
+                playerCard.className = 'player-card';
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'player-name';
+                nameDiv.textContent = player.name;
+
+                const scoreSection = document.createElement('div');
+                scoreSection.className = 'score-section';
+
+                const btnMinus = document.createElement('button');
+                btnMinus.className = 'control-btn btn-minus';
+                btnMinus.textContent = '-';
+                btnMinus.onclick = function() { updateScore(index, -1); };
+
+                const scoreDisplay = document.createElement('div');
+                scoreDisplay.className = 'score';
+                scoreDisplay.textContent = player.score;
+
+                const btnPlus = document.createElement('button');
+                btnPlus.className = 'control-btn btn-plus';
+                btnPlus.textContent = '+';
+                btnPlus.onclick = function() { updateScore(index, 1); };
+
+                scoreSection.appendChild(btnMinus);
+                scoreSection.appendChild(scoreDisplay);
+                scoreSection.appendChild(btnPlus);
+                playerCard.appendChild(nameDiv);
+                playerCard.appendChild(scoreSection);
+
+                container.appendChild(playerCard);
+            });
+        }
+
+        // Valider avec la touche Entrée
         function handleKeyPress(event) {
             if (event.key === 'Enter') addPlayer();
         }
