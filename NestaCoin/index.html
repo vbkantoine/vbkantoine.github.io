@@ -3,171 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compteur de NestaCoin</title>
+    <title>NestaCoin Dashboard</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #333;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
+            
+            /* --- FOND D'ÉCRAN MOSAÏQUE --- */
+            background-image: url('keypred.jpg'); 
+            background-size: 1.5cm 1.5cm;
+            background-repeat: repeat;
+            background-color: #1a1a1a; 
         }
-        h1 {
+
+        /* --- STYLE DU LOGO --- */
+        .logo-container {
             text-align: center;
-            color: #d4af37; /* Couleur or pour le côté crypto */
+            margin-bottom: 30px;
         }
+
+        .main-logo {
+            max-width: 100%; /* S'adapte à la largeur de l'écran */
+            height: auto;
+            filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.5)); /* Ajoute une ombre sous le logo */
+        }
+        
         .add-player-section {
             display: flex;
             justify-content: center;
             margin-bottom: 20px;
             gap: 10px;
         }
+        
         input[type="text"] {
-            padding: 10px;
+            padding: 12px;
             font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: none;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            flex-grow: 1;
         }
-        button {
-            padding: 10px 15px;
+        
+        .btn-add {
+            padding: 10px 20px;
             font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
             border: none;
-            border-radius: 4px;
-            background-color: #3498db;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f39c12, #d35400); /* Dégradé orange/or */
             color: white;
-            transition: background-color 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
         }
-        button:hover {
-            background-color: #2980b9;
+        
+        .btn-add:active {
+            transform: scale(0.95);
         }
+        
         .player-card {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.95); /* Légèrement transparent */
             padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 12px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            border: 2px solid #d4af37; /* Bordure dorée */
         }
+        
         .player-name {
             font-size: 18px;
             font-weight: bold;
-            flex-grow: 1;
+            color: #2c3e50;
         }
+        
         .score-section {
             display: flex;
             align-items: center;
             gap: 15px;
         }
+        
         .score {
+            font-size: 22px;
+            font-weight: 900;
+            min-width: 40px;
+            text-align: center;
+            color: #d4af37;
+            text-shadow: 1px 1px 0px #000;
+        }
+        
+        .control-btn {
+            width: 40px;
+            height: 40px;
             font-size: 20px;
             font-weight: bold;
-            min-width: 30px;
-            text-align: center;
+            cursor: pointer;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0px rgba(0,0,0,0.2);
         }
-        .btn-minus {
-            background-color: #e74c3c;
-        }
-        .btn-minus:hover {
-            background-color: #c0392b;
-        }
-        .btn-plus {
-            background-color: #2ecc71;
-        }
-        .btn-plus:hover {
-            background-color: #27ae60;
-        }
+
+        .btn-minus { background-color: #e74c3c; }
+        .btn-minus:active { transform: translateY(2px); box-shadow: none; }
+
+        .btn-plus { background-color: #27ae60; }
+        .btn-plus:active { transform: translateY(2px); box-shadow: none; }
+
     </style>
 </head>
 <body>
 
-    <h1>💰 Compteur de NestaCoin</h1>
+    <div class="logo-container">
+        <img src="logo.png" alt="NestaCoin Logo" class="main-logo">
+    </div>
 
     <div class="add-player-section">
-        <input type="text" id="playerNameInput" placeholder="Nom du joueur..." onkeypress="handleKeyPress(event)">
-        <button onclick="addPlayer()">Ajouter un joueur</button>
+        <input type="text" id="playerNameInput" placeholder="Nom du parieur / joueur..." onkeypress="handleKeyPress(event)">
+        <button class="btn-add" onclick="addPlayer()">AJOUTER</button>
     </div>
 
     <div id="playersContainer">
-        <!-- Les joueurs apparaîtront ici -->
-    </div>
+        </div>
 
     <script>
-        // Fonction pour ajouter un joueur
         function addPlayer() {
             const input = document.getElementById('playerNameInput');
             const playerName = input.value.trim();
 
-            if (playerName === "") {
-                alert("Veuillez entrer un nom pour le joueur.");
-                return;
-            }
+            if (playerName === "") return;
 
-            // Création de l'élément contenant le joueur
             const playerCard = document.createElement('div');
             playerCard.className = 'player-card';
 
-            // Nom du joueur
             const nameDiv = document.createElement('div');
             nameDiv.className = 'player-name';
             nameDiv.textContent = playerName;
 
-            // Section du score (boutons et affichage)
             const scoreSection = document.createElement('div');
             scoreSection.className = 'score-section';
 
-            // Bouton Moins
             const btnMinus = document.createElement('button');
-            btnMinus.className = 'btn-minus';
+            btnMinus.className = 'control-btn btn-minus';
             btnMinus.textContent = '-';
-            btnMinus.onclick = function() {
-                updateScore(scoreDisplay, -1);
-            };
+            btnMinus.onclick = function() { updateScore(scoreDisplay, -1); };
 
-            // Affichage du score (commence à 0)
             const scoreDisplay = document.createElement('div');
             scoreDisplay.className = 'score';
             scoreDisplay.textContent = '0';
 
-            // Bouton Plus
             const btnPlus = document.createElement('button');
-            btnPlus.className = 'btn-plus';
+            btnPlus.className = 'control-btn btn-plus';
             btnPlus.textContent = '+';
-            btnPlus.onclick = function() {
-                updateScore(scoreDisplay, 1);
-            };
+            btnPlus.onclick = function() { updateScore(scoreDisplay, 1); };
 
-            // Assemblage des éléments
             scoreSection.appendChild(btnMinus);
             scoreSection.appendChild(scoreDisplay);
             scoreSection.appendChild(btnPlus);
-
             playerCard.appendChild(nameDiv);
             playerCard.appendChild(scoreSection);
 
-            // Ajout du joueur à la page
-            document.getElementById('playersContainer').appendChild(playerCard);
+            document.getElementById('playersContainer').prepend(playerCard); // Ajoute en haut de liste
 
-            // Vider le champ de texte
             input.value = "";
             input.focus();
         }
 
-        // Fonction pour mettre à jour le score
         function updateScore(scoreElement, change) {
             let currentScore = parseInt(scoreElement.textContent);
             currentScore += change;
             scoreElement.textContent = currentScore;
         }
 
-        // Permet d'ajouter un joueur en appuyant sur la touche "Entrée"
         function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                addPlayer();
-            }
+            if (event.key === 'Enter') addPlayer();
         }
     </script>
 </body>
