@@ -87,7 +87,6 @@
         #tree-svg { width: 100%; height: 100%; background-color: #e0e4e8; cursor: grab; }
         #tree-svg.grabbing { cursor: grabbing; }
 
-        /* Rayon de bordure (arrondi) pour les chemins orthogonaux */
         .branch { stroke: #95a5a6; stroke-width: 2px; fill: none; stroke-linejoin: round; }
         .branch.spouse-branch { stroke: var(--union); stroke-dasharray: 6,4; }
         
@@ -97,10 +96,12 @@
         .node.selected rect { stroke: #27ae60; stroke-width: 3px; fill: #eafaf1; }
         .node.spouse-node rect { stroke: var(--union); } 
         
-        /* Textes */
-        .node-name { font-size: 13px; font-weight: bold; fill: var(--primary); text-anchor: middle; }
+        /* Textes (G0 à G3) */
+        .node-name-first { font-size: 13px; font-weight: bold; fill: var(--primary); text-anchor: middle; }
+        .node-name-last { font-size: 13px; font-weight: bold; fill: var(--primary); text-anchor: middle; text-transform: uppercase; }
         .node-dates { font-size: 11px; fill: #7f8c8d; text-anchor: middle; }
         
+        /* Textes (G4 - Arrière-arrière grands parents) */
         .node-name-g4 { font-size: 11px; font-weight: bold; fill: var(--primary); text-anchor: middle; }
         .node-name-g4-last { font-size: 11px; font-weight: bold; fill: var(--secondary); text-anchor: middle; text-transform: uppercase; }
         .node-dates-g4 { font-size: 10px; fill: #7f8c8d; text-anchor: middle; }
@@ -172,8 +173,8 @@
 <script>
     // --- Configuration Visuelle ---
     const CONFIG = {
-        stdWidth: 240,    
-        stdHeight: 75,
+        stdWidth: 200,    // Largeur réduite grâce au nom sur 2 lignes
+        stdHeight: 80,    // Légèrement plus haut pour aérer les 3 lignes
         g4Width: 105,     
         g4Height: 100,    
         gapX: 10,         
@@ -182,7 +183,7 @@
 
     let gedcomData = { individuals: {}, families: {} };
     let currentPersonId = null;
-    let svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 0.8 }; // Dézoom initial 80%
+    let svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 0.8 };
 
     // --- Parser GEDCOM ---
     function parseGedcom(text) {
@@ -190,6 +191,7 @@
         let currentEntity = null;
         let currentType = null; 
         let currentContext = null; 
+        let currentEventBlock = null; // Pour stocker les notes liées aux événements
 
         gedcomData.individuals = {};
         gedcomData.families = {};
@@ -207,19 +209,28 @@
 
             if (level === 0 && id) {
                 currentContext = null;
+                currentEventBlock = null;
                 if (tag === 'INDI') {
                     currentType = 'INDI';
                     currentEntity = id;
-                    gedcomData.individuals[id] = { id, name: "Inconnu", firstName: "", lastName: "", birth: "", death: "", birthPlace: "", deathPlace: "", sex: null, photo: null, famc: null, fams: [], occu: "", educ: [], mil: [] };
+                    gedcomData.individuals[id] = { 
+                        id, name: "Inconnu", firstName: "", lastName: "", 
+                        birth: "", death: "", birthPlace: "", deathPlace: "", 
+                        sex: null, photo: null, famc: null, fams: [], occu: "", 
+                        educ: [], events: [] 
+                    };
                 } else if (tag === 'FAM') {
                     currentType = 'FAM';
                     currentEntity = id;
                     gedcomData.families[id] = { id, husb: null, wife: null, chil: [], uType: "", uDate: "", uPlace: "" };
                 } else { currentType = null; }
-            } else if (level > 0 && currentType === 'INDI' && currentEntity) {
+            } 
+            else if (level > 0 && currentType === 'INDI' && currentEntity) {
                 const person = gedcomData.individuals[currentEntity];
+                
                 if (level === 1) {
                     currentContext = null; 
+                    currentEventBlock = null;
                     if (tag === 'NAME') {
                         let nameRaw = value;
                         let fname = nameRaw.replace(/\/[^\/]*\//, '').trim(); 
@@ -231,14 +242,19 @@
                     else if (tag === 'SEX') person.sex = value.trim();
                     else if (tag === 'OCCU') person.occu = value.trim();
                     else if (tag === 'EDUC') person.educ.push(value.trim());
-                    else if (tag === 'TITL') person.mil.push(value.trim());
                     else if (tag === 'BIRT') currentContext = 'BIRT';
                     else if (tag === 'DEAT') currentContext = 'DEAT';
                     else if (tag === 'OBJE') currentContext = 'OBJE'; 
-                    else if (tag === 'EVEN') currentContext = 'EVEN_INDI';
                     else if (tag === 'FAMC') person.famc = value; 
                     else if (tag === 'FAMS') person.fams.push(value); 
-                } else if (level === 2 && currentContext) {
+                    // Distinctions et événements (Pour capturer les notes)
+                    else if (tag === 'TITL' || tag === 'EVEN') {
+                        currentContext = 'EVENT';
+                        currentEventBlock = { tag: tag, value: value.trim(), type: '', note: '' };
+                        person.events.push(currentEventBlock);
+                    }
+                } 
+                else if (level === 2 && currentContext) {
                     if (tag === 'DATE') {
                         if (currentContext === 'BIRT') person.birth = value;
                         if (currentContext === 'DEAT') person.death = value;
@@ -248,11 +264,18 @@
                     } else if (tag === 'FILE' && currentContext === 'OBJE') {
                         if (!person.photo) person.photo = value.trim(); 
                         currentContext = null; 
-                    } else if (tag === 'TYPE' && currentContext === 'EVEN_INDI') {
-                        if (value.toLowerCase().includes('milit')) person.mil.push(value);
+                    } else if (currentContext === 'EVENT' && currentEventBlock) {
+                        if (tag === 'TYPE') currentEventBlock.type = value.trim();
+                        else if (tag === 'NOTE') currentEventBlock.note = value.trim();
                     }
                 }
-            } else if (level > 0 && currentType === 'FAM' && currentEntity) {
+                else if (level === 3 && currentContext === 'EVENT' && currentEventBlock) {
+                    // Gestion basique des notes sur plusieurs lignes
+                    if (tag === 'CONT') currentEventBlock.note += '<br>' + value.trim();
+                    else if (tag === 'CONC') currentEventBlock.note += value.trim();
+                }
+            } 
+            else if (level > 0 && currentType === 'FAM' && currentEntity) {
                 const fam = gedcomData.families[currentEntity];
                 if (level === 1) {
                     if (tag === 'HUSB') fam.husb = value;
@@ -332,51 +355,32 @@
         return 'general-homme.jpg'; 
     }
 
-    function extractYear(dateStr) {
-        if(!dateStr) return '';
-        const match = dateStr.match(/\d{4}/);
-        return match ? match[0] : '';
-    }
-
     function truncate(str, len) {
         if(!str) return '';
-        return str.length > len ? str.substring(0, len-2) + '..' : str;
+        return str.length > len ? str.substring(0, len-3) + '...' : str;
     }
 
-    // Convertit "12 JAN 1900" en "12 jan 1900"
+    // Formatage des dates pour l'arbre (Enlève ABT, minuscules)
+    function formatTreeDate(dateStr) {
+        if (!dateStr) return '';
+        return dateStr.replace(/ABT\s+/ig, '').replace(/[A-Z]{3}/g, m => m.toLowerCase());
+    }
+
+    // Formatage des dates pour la fiche (Traduire ABT)
     function formatDetailsDate(dateStr) {
-        return dateStr ? dateStr.replace(/[A-Z]{3}/g, m => m.toLowerCase()) : '';
+        if (!dateStr) return '';
+        return dateStr.replace(/ABT\s+/ig, 'approximativement ').replace(/[A-Z]{3}/g, m => m.toLowerCase());
     }
 
-    // Formatage Spécial pour l'arbre : Date (pas de '?' si manque)
     function formatDateLine(birth, death) {
-        let b = formatDetailsDate(birth);
-        let d = formatDetailsDate(death);
+        let b = formatTreeDate(birth);
+        let d = formatTreeDate(death);
         if (b && d) return `${b} - ${d}`;
         if (b) return b;
         if (d) return `- ${d}`;
         return '';
     }
 
-    // Formatage Spécial : Prénom + NOM (Coupe intelligente)
-    function formatNameStd(firstName, lastName) {
-        const LAST = (lastName || '').toUpperCase();
-        const first = firstName || '';
-        const maxLen = 30; 
-        
-        let full = `${first} ${LAST}`.trim();
-        if (full.length <= maxLen) return full;
-        
-        let firstFirst = first.split(' ')[0];
-        let attempt1 = `${firstFirst}... ${LAST}`.trim();
-        if (attempt1.length <= maxLen) return attempt1;
-        
-        let allowedLast = maxLen - firstFirst.length - 7;
-        if (allowedLast < 2) allowedLast = 2; 
-        return `${firstFirst}... ${LAST.substring(0, allowedLast)}...`;
-    }
-
-    // Couleur de bordure par sexe
     function getBorderColor(sex) {
         if (sex === 'F') return '#ff6b81'; // Rose
         if (sex === 'M') return '#3498db'; // Bleu
@@ -571,7 +575,7 @@
         treeData.links.forEach(link => {
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             
-            // Lignes de Fratrie (Crochets orthogonaux)
+            // Lignes de Fratrie (Crochets)
             if (link.type === 'g1-to-g0') {
                 const fNode = treeData.nodes.find(n => n.id === link.father);
                 const mNode = treeData.nodes.find(n => n.id === link.mother);
@@ -625,7 +629,7 @@
                     let endY = toNode.y - toSize.h/2;
                     const midY = (startY + endY) / 2; 
                     
-                    // Lignes Orthogonales pour tous (Parent -> Enfant normal)
+                    // Lignes Orthogonales strictes pour tous les descendants standards
                     path.setAttribute("d", `M ${fromNode.x} ${startY} L ${fromNode.x} ${midY} L ${toNode.x} ${midY} L ${toNode.x} ${endY}`);
                     path.setAttribute("class", "branch");
                 }
@@ -703,8 +707,12 @@
                 dt.setAttribute("class", "node-dates-g4");
                 dt.setAttribute("x", 0); dt.setAttribute("y", 39);
                 
-                let yB = extractYear(p.birth);
-                let yD = extractYear(p.death);
+                // G4 : Seulement l'année, sans ABT
+                let yB = p.birth ? formatTreeDate(p.birth).match(/\d{4}/) : null;
+                let yD = p.death ? formatTreeDate(p.death).match(/\d{4}/) : null;
+                yB = yB ? yB[0] : null;
+                yD = yD ? yD[0] : null;
+
                 let textG4 = '';
                 if (yB && yD) textG4 = `${yB} - ${yD}`;
                 else if (yB) textG4 = yB;
@@ -714,6 +722,7 @@
                 g.appendChild(dt);
 
             } else {
+                // Photo alignée à gauche (Standard G-1 à G3)
                 const imgRadius = 25;
                 const imgSize = imgRadius * 2;
                 const imgX = -size.w/2 + 10;
@@ -734,15 +743,24 @@
 
                 const textX = imgX + imgSize + 10 + (size.w - imgSize - 30)/2; 
                 
-                const nameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                nameT.setAttribute("class", "node-name");
-                nameT.setAttribute("x", textX); nameT.setAttribute("y", -5);
-                nameT.textContent = formatNameStd(p.firstName, p.lastName);
-                g.appendChild(nameT);
+                // Prénom sur Ligne 1
+                const fnameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                fnameT.setAttribute("class", "node-name-first");
+                fnameT.setAttribute("x", textX); fnameT.setAttribute("y", -12);
+                fnameT.textContent = truncate(p.firstName, 22);
+                g.appendChild(fnameT);
 
+                // NOM sur Ligne 2 (Majuscules)
+                const lnameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                lnameT.setAttribute("class", "node-name-last");
+                lnameT.setAttribute("x", textX); lnameT.setAttribute("y", 4);
+                lnameT.textContent = truncate(p.lastName, 22).toUpperCase();
+                g.appendChild(lnameT);
+
+                // Dates sur Ligne 3
                 const datesT = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 datesT.setAttribute("class", "node-dates");
-                datesT.setAttribute("x", textX); datesT.setAttribute("y", 15);
+                datesT.setAttribute("x", textX); datesT.setAttribute("y", 20);
                 datesT.textContent = formatDateLine(p.birth, p.death);
                 g.appendChild(datesT);
             }
@@ -876,7 +894,6 @@
                     let spouseId = fam.husb === id ? fam.wife : fam.husb;
                     let spouse = spouseId ? getPerson(spouseId) : null;
                     
-                    // Info de l'union
                     let unionType = fam.uType || 'Union';
                     let unionDetail = '';
                     if (fam.uDate || fam.uPlace) {
@@ -901,8 +918,19 @@
         }
         html += `</div>`;
         
-        // Block Distinctions et Diplômes
-        let hasDistinctions = (p.educ && p.educ.length > 0) || (p.mil && p.mil.length > 0);
+        // Extraction Distinctions et Militaire avec notes associées
+        let milList = [];
+        if (p.events) {
+            p.events.forEach(ev => {
+                if (ev.tag === 'TITL' || (ev.type && ev.type.toLowerCase().includes('milit'))) {
+                    let text = ev.value || ev.type || 'Titre / Distinction';
+                    if (ev.note) text += `<br><span style="color:#666; font-size:0.9em; font-style:italic;">Note : ${ev.note}</span>`;
+                    milList.push(text);
+                }
+            });
+        }
+
+        let hasDistinctions = (p.educ && p.educ.length > 0) || (milList.length > 0);
         if (hasDistinctions) {
             html += `<div style="grid-column: span 2; border-top: 2px solid #eee; margin-top:10px; padding-top:10px;"><h3>Distinctions & Diplômes</h3></div>
                      <div class="details-info-hash" style="grid-column: span 2;">`;
@@ -910,8 +938,8 @@
             if (p.educ && p.educ.length > 0) {
                 html += `<div class="label">Éducation / Diplômes</div><div>${p.educ.join('<br>')}</div>`;
             }
-            if (p.mil && p.mil.length > 0) {
-                html += `<div class="label">Titres / Militaire</div><div>${p.mil.join('<br>')}</div>`;
+            if (milList.length > 0) {
+                html += `<div class="label">Titres / Militaire</div><div>${milList.join('<br><br>')}</div>`;
             }
             html += `</div>`;
         }
