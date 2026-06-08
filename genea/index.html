@@ -35,9 +35,26 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
         }
 
         h1 { margin: 0 0 10px 0; font-size: 1.2rem; color: var(--primary); }
+
+        #logout-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            display: none;
+            transition: background 0.2s;
+        }
+        #logout-btn:hover { background: #c0392b; }
 
         /* Setup & Password */
         #setup-section { width: 100%; max-width: 500px; text-align: center; margin-bottom: 5px; }
@@ -146,6 +163,7 @@
 
 <header>
     <h1>Explorateur Généalogique Sécurisé</h1>
+    <button id="logout-btn" onclick="logout()">🔒 Verrouiller</button>
     <div id="setup-section">
         <div id="password-form">
             <p>🔒 Fichier protégé (arbre.enc)</p>
@@ -199,7 +217,18 @@
     let currentPersonId = null;
     let svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 0.8 };
 
-    // --- Moteur de Déchiffrement AES-GCM ---
+    // --- Moteur de Déchiffrement AES-GCM et Session ---
+    document.addEventListener("DOMContentLoaded", () => {
+        setupPanZoom();
+        
+        // Vérifie si le mot de passe est déjà en session (survie au rechargement)
+        const savedPwd = sessionStorage.getItem('gedcom_pwd');
+        if (savedPwd) {
+            document.getElementById('decrypt-password').value = savedPwd;
+            loadAndDecrypt();
+        }
+    });
+
     document.getElementById('decrypt-password').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') loadAndDecrypt();
     });
@@ -217,17 +246,14 @@
         msgDiv.innerHTML = "⏳ Téléchargement et déchiffrement...";
 
         try {
-            // 1. Récupération du fichier chiffré depuis le serveur
             const response = await fetch('arbre.enc');
             if (!response.ok) throw new Error("Fichier 'arbre.enc' introuvable sur le serveur.");
             const buffer = await response.arrayBuffer();
 
-            // 2. Séparation des éléments cryptographiques (Sel, IV, Données)
             const salt = buffer.slice(0, 16);
             const iv = buffer.slice(16, 28);
             const data = buffer.slice(28);
 
-            // 3. Dérivation de la clé avec le mot de passe fourni
             const encoder = new TextEncoder();
             const passwordBytes = encoder.encode(pwd);
 
@@ -243,30 +269,37 @@
                 ["decrypt"]
             );
 
-            // 4. Déchiffrement
             const decryptedContent = await window.crypto.subtle.decrypt(
                 { name: "AES-GCM", iv: iv },
                 key,
                 data
             );
 
-            // 5. Conversion en texte et Parsing
             const decoder = new TextDecoder('utf-8');
             const gedcomText = decoder.decode(decryptedContent);
             
             parseGedcom(gedcomText);
 
-            // 6. Mise à jour de l'interface
+            // Succès : on enregistre en mémoire session et on met à jour l'UI
+            sessionStorage.setItem('gedcom_pwd', pwd);
+            
             document.getElementById('password-form').style.display = 'none';
             msgDiv.style.display = 'none';
+            document.getElementById('logout-btn').style.display = 'block';
             document.getElementById('search-container').style.display = 'block';
             document.getElementById('search-input').focus();
-            setupPanZoom();
 
         } catch (error) {
             console.error(error);
             msgDiv.innerHTML = "<span style='color: #e74c3c;'>❌ Mot de passe incorrect ou fichier invalide.</span>";
+            sessionStorage.removeItem('gedcom_pwd'); // Nettoie en cas d'erreur
         }
+    }
+
+    // Fonction de verrouillage (Déconnexion)
+    function logout() {
+        sessionStorage.removeItem('gedcom_pwd');
+        location.reload(); // Recharge la page pour effacer la RAM et réafficher le cadenas
     }
 
     // --- Parser GEDCOM ---
@@ -427,13 +460,11 @@
         return str.length > len ? str.substring(0, len-3) + '...' : str;
     }
 
-    // Formatage des dates pour l'arbre (Enlève ABT, minuscules)
     function formatTreeDate(dateStr) {
         if (!dateStr) return '';
         return dateStr.replace(/ABT\s+/ig, '').replace(/[A-Z]{3}/g, m => m.toLowerCase());
     }
 
-    // Formatage des dates pour la fiche (Traduire ABT)
     function formatDetailsDate(dateStr) {
         if (!dateStr) return '';
         return dateStr.replace(/ABT\s+/ig, 'approximativement ').replace(/[A-Z]{3}/g, m => m.toLowerCase());
@@ -642,6 +673,7 @@
         treeData.links.forEach(link => {
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             
+            // Lignes de Fratrie (Crochets)
             if (link.type === 'g1-to-g0') {
                 const fNode = treeData.nodes.find(n => n.id === link.father);
                 const mNode = treeData.nodes.find(n => n.id === link.mother);

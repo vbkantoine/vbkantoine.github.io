@@ -12,3 +12,4 @@ latex/*.pdf
 *.bbl
 *.blg
 genea/info.txt
+genea/arbre.ged
