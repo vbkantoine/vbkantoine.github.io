@@ -9,6 +9,7 @@
             --primary: #2c3e50;
             --secondary: #34495e;
             --accent: #3498db;
+            --union: #e67e22; /* Couleur pour les conjoints */
             --bg: #f5f6fa;
             --card-bg: #ffffff;
             --border: #dcdde1;
@@ -23,7 +24,7 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Empêche le scroll de la page entière */
+            overflow: hidden;
         }
 
         header {
@@ -38,7 +39,6 @@
 
         h1 { margin: 0 0 10px 0; font-size: 1.2rem; color: var(--primary); }
 
-        /* Setup & Search */
         #setup-section { width: 100%; max-width: 500px; text-align: center; }
         #loading-msg { font-weight: bold; color: var(--accent); padding: 10px; }
 
@@ -71,7 +71,6 @@
         .search-item:hover { background-color: #f1f2f6; }
         .search-item img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc;}
 
-        /* Onglets */
         .tabs { display: none; justify-content: center; gap: 5px; margin-top: 10px; }
         .tab-btn {
             background: #eee; border: none; padding: 8px 15px;
@@ -80,7 +79,6 @@
         }
         .tab-btn.active { background: var(--accent); color: white; }
 
-        /* Zones de contenu */
         #main-content { flex: 1; position: relative; overflow: hidden; }
         .view-section { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         .view-section.active { display: block; }
@@ -90,23 +88,23 @@
             width: 100%;
             height: 100%;
             background-color: #e0e4e8;
-            cursor: grab; /* Indique qu'on peut agripper */
+            cursor: grab;
         }
         #tree-svg.grabbing { cursor: grabbing; }
 
-        .branch { stroke: #95a5a6; stroke-width: 1.5px; fill: none; }
+        .branch { stroke: #95a5a6; stroke-width: 2px; fill: none; }
+        .branch.spouse-branch { stroke: var(--union); stroke-dasharray: 6,4; } /* Ligne pointillée pour les unions */
         
         .node { cursor: pointer; }
         .node rect { fill: var(--card-bg); stroke: var(--border); stroke-width: 1px; rx: 5; ry: 5; transition: stroke 0.2s; }
         .node:hover rect { stroke: var(--accent); stroke-width: 2px; }
         .node.selected rect { stroke: #27ae60; stroke-width: 3px; fill: #eafaf1; }
+        .node.spouse-node rect { stroke: var(--union); } /* Bordure orange pour les conjoints */
         
-        .node-name { font-size: 12px; font-weight: bold; fill: var(--primary); text-anchor: middle; }
-        .node-dates { font-size: 10px; fill: #7f8c8d; text-anchor: middle; }
-        .node-photo { clip-path: circle(25px at 25px 25px); object-fit: cover; }
+        .node-name { font-size: 13px; font-weight: bold; fill: var(--primary); text-anchor: middle; }
+        .node-dates { font-size: 11px; fill: #7f8c8d; text-anchor: middle; }
         .photo-circle-border { fill: none; stroke: #ccc; stroke-width: 1px; }
 
-        /* Contrôles de zoom */
         .zoom-controls {
             position: absolute; bottom: 20px; right: 20px;
             display: flex; flex-direction: column; gap: 5px; z-index: 90;
@@ -136,16 +134,13 @@
 
 <header>
     <h1>Explorateur Généalogique</h1>
-    
     <div id="setup-section">
         <div id="loading-msg">⏳ Chargement de "arbre.ged"...</div>
-        
         <div id="search-container" class="search-box" style="display: none;">
             <input type="text" id="search-input" placeholder="Rechercher une personne..." autocomplete="off">
             <div id="search-results"></div>
         </div>
     </div>
-
     <div class="tabs" id="tabs-container">
         <button class="tab-btn active" onclick="switchTab('tree-view')">Carte Interactive</button>
         <button class="tab-btn" onclick="switchTab('details-view')">Fiche détaillée</button>
@@ -160,7 +155,6 @@
                 <g id="nodes-group"></g>
             </g>
         </svg>
-        
         <div class="zoom-controls">
             <button onclick="zoom(1.2)">+</button>
             <button onclick="zoom(0.8)">-</button>
@@ -169,42 +163,34 @@
     </div>
 
     <div id="details-view" class="view-section">
-        <div id="details-content" class="details-container">
-            </div>
+        <div id="details-content" class="details-container"></div>
     </div>
 </div>
 
 <script>
-    // --- Configuration Visuelle de l'Arbre ---
+    // --- Configuration Visuelle ---
+    // Nœuds élargis à 240px pour éviter que le texte ne dépasse
     const CONFIG = {
-        node: { width: 180, height: 70, photoSize: 50, gapX: 40, gapY: 100 },
+        node: { width: 240, height: 75, photoSize: 50, gapX: 40, gapY: 120 },
         genCoords: {
-            '3': -300, // G+3
-            '2': -200, // G+2
-            '1': -100, // G+1
-            '0': 0,    // Centre
+            '3': -360, // Arrière-grands-parents
+            '2': -240, // Grands-parents
+            '1': -120, // Parents
+            '0': 0,    // Personne ciblée + Conjoints
             '-1': 150  // Enfants
         }
     };
 
-    // --- Variables Globales ---
     let gedcomData = { individuals: {}, families: {} };
     let currentPersonId = null;
-    
-    // Etat pour le Pan & Zoom
-    let svgState = {
-        grabbing: false,
-        point: { x: 0, y: 0 }, // Coordonnées souris début drag
-        translate: { x: 0, y: 0 },
-        scale: 1
-    };
+    let svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 1 };
 
-    // --- 1. Parser GEDCOM Amélioré (Sexe + Photo) ---
+    // --- Parser GEDCOM ---
     function parseGedcom(text) {
         const lines = text.split('\n');
         let currentEntity = null;
         let currentType = null; 
-        let currentContext = null; // 'BIRT', 'DEAT', 'OBJE' (pour image)
+        let currentContext = null; 
 
         gedcomData.individuals = {};
         gedcomData.families = {};
@@ -234,12 +220,12 @@
             } else if (level > 0 && currentType === 'INDI' && currentEntity) {
                 const person = gedcomData.individuals[currentEntity];
                 if (level === 1) {
-                    currentContext = null; // Reset context on new level 1 tag
+                    currentContext = null; 
                     if (tag === 'NAME') person.name = value.replace(/\//g, '');
                     else if (tag === 'SEX') person.sex = value.trim();
                     else if (tag === 'BIRT') currentContext = 'BIRT';
                     else if (tag === 'DEAT') currentContext = 'DEAT';
-                    else if (tag === 'OBJE') currentContext = 'OBJE'; // Début bloc objet (image)
+                    else if (tag === 'OBJE') currentContext = 'OBJE'; 
                     else if (tag === 'FAMC') person.famc = value; 
                     else if (tag === 'FAMS') person.fams.push(value); 
                 } else if (level === 2 && currentContext) {
@@ -247,9 +233,8 @@
                         if (currentContext === 'BIRT') person.birth = value;
                         if (currentContext === 'DEAT') person.death = value;
                     } else if (tag === 'FILE' && currentContext === 'OBJE') {
-                        // Stocke le lien de la photo. Suppose un chemin correct relatif ou absolu.
-                        if (!person.photo) person.photo = value.trim(); // Prend la 1ère photo trouvée
-                        currentContext = null; // Sort du contexte OBJE après avoir trouvé le fichier
+                        if (!person.photo) person.photo = value.trim(); 
+                        currentContext = null; 
                     }
                 }
             } else if (level > 0 && currentType === 'FAM' && currentEntity) {
@@ -261,31 +246,24 @@
                 }
             }
         }
-        console.log("GEDCOM chargé:", Object.keys(gedcomData.individuals).length, "Individus");
     }
 
-    // --- 2. Initialisation & Recherche ---
+    // --- Initialisation ---
     document.addEventListener("DOMContentLoaded", () => {
         setupPanZoom();
-        
         fetch('arbre.ged')
-            .then(response => {
-                if (!response.ok) throw new Error("Fichier arbre.ged non trouvé.");
-                return response.text();
-            })
+            .then(response => { if (!response.ok) throw new Error(); return response.text(); })
             .then(text => {
                 parseGedcom(text);
                 document.getElementById('loading-msg').style.display = 'none';
                 document.getElementById('search-container').style.display = 'block';
                 document.getElementById('search-input').focus();
             })
-            .catch(error => {
-                console.error(error);
-                document.getElementById('loading-msg').innerHTML = `<span style="color: #e74c3c;">❌ Erreur: Impossible de charger "arbre.ged". Assurez-vous d'utiliser un serveur web et que le fichier est présent.</span>`;
+            .catch(() => {
+                document.getElementById('loading-msg').innerHTML = `<span style="color: #e74c3c;">❌ Erreur: Impossible de charger "arbre.ged".</span>`;
             });
     });
 
-    // Moteur de recherche
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
 
@@ -310,22 +288,17 @@
         } else { searchResults.style.display = 'none'; }
     });
 
-    // Masquer recherche si clic extérieur
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.search-box')) searchResults.style.display = 'none';
     });
 
-
-    // --- 3. Gestionnaire de Photos ---
     function getPhotoUrl(person) {
-        if (person && person.photo) return person.photo; // URL ou chemin du GEDCOM
-        // Par défaut selon le sexe
+        if (person && person.photo) return person.photo; 
         if (person && person.sex === 'F') return 'general-femme.jpg';
-        return 'general-homme.jpg'; // Par défaut homme si M ou inconnu
+        return 'general-homme.jpg'; 
     }
 
-
-    // --- 4. Rendu de l'Arbre SVG & Logique de Layout ---
+    // --- Rendu de l'Arbre SVG ---
     function selectPerson(id) {
         if (!gedcomData.individuals[id]) return;
         currentPersonId = id;
@@ -341,7 +314,6 @@
         }
     }
 
-    // Helpers généalogiques
     const getPerson = (id) => gedcomData.individuals[id];
     function getParents(pId) {
         const p = getPerson(pId);
@@ -352,411 +324,4 @@
     }
     function getChildren(pId) {
         const p = getPerson(pId);
-        if (!p || !p.fams) return [];
-        let children = [];
-        p.fams.forEach(fId => {
-            const fam = gedcomData.families[fId];
-            if (fam && fam.chil) {
-                fam.chil.forEach(cId => { if(getPerson(cId)) children.push(getPerson(cId)); });
-            }
-        });
-        return children;
-    }
-
-    // Structure de l'arbre 3 Asc / 1 Desc
-    function buildTreeStructure(rootId) {
-        const nodes = []; // {id, person, x, y, gen}
-        const links = []; // {fromId, toId}
-
-        // G0: Centre
-        nodes.push({ id: rootId, person: getPerson(rootId), x: 0, y: CONFIG.genCoords['0'], gen: 0 });
-
-        // --- ASCENDANCE ---
-        // G+1: Parents
-        const parents = getParents(rootId);
-        if (parents[0]) {
-            nodes.push({ id: parents[0].id, person: parents[0], x: -CONFIG.node.width/2 - CONFIG.node.gapX, y: CONFIG.genCoords['1'], gen: 1 });
-            links.push({ from: parents[0].id, to: rootId });
-        }
-        if (parents[1]) {
-            nodes.push({ id: parents[1].id, person: parents[1], x: CONFIG.node.width/2 + CONFIG.node.gapX, y: CONFIG.genCoords['1'], gen: 1 });
-            links.push({ from: parents[1].id, to: rootId });
-        }
-
-        // G+2: Grands-parents (layout simplifié fixe)
-        if(parents[0]) { // Côté Père
-            const gParentsF = getParents(parents[0].id);
-            const startX = nodes.find(n=>n.id === parents[0].id).x;
-            if(gParentsF[0]) {
-                nodes.push({ id: gParentsF[0].id, person: gParentsF[0], x: startX - CONFIG.node.width/2, y: CONFIG.genCoords['2'], gen: 2 });
-                links.push({ from: gParentsF[0].id, to: parents[0].id });
-            }
-            if(gParentsF[1]) {
-                nodes.push({ id: gParentsF[1].id, person: gParentsF[1], x: startX + CONFIG.node.width/2, y: CONFIG.genCoords['2'], gen: 2 });
-                links.push({ from: gParentsF[1].id, to: parents[0].id });
-            }
-        }
-        if(parents[1]) { // Côté Mère
-            const gParentsM = getParents(parents[1].id);
-            const startX = nodes.find(n=>n.id === parents[1].id).x;
-            if(gParentsM[0]) {
-                nodes.push({ id: gParentsM[0].id, person: gParentsM[0], x: startX - CONFIG.node.width/2, y: CONFIG.genCoords['2'], gen: 2 });
-                links.push({ from: gParentsM[0].id, to: parents[1].id });
-            }
-            if(gParentsM[1]) {
-                nodes.push({ id: gParentsM[1].id, person: gParentsM[1], x: startX + CONFIG.node.width/2, y: CONFIG.genCoords['2'], gen: 2 });
-                links.push({ from: gParentsM[1].id, to: parents[1].id });
-            }
-        }
-
-        // G+3: Arrière G-P (Layout automatique basique par rapport à G2)
-        const g2Nodes = nodes.filter(n => n.gen === 2);
-        g2Nodes.forEach(g2Node => {
-            const agParents = getParents(g2Node.id);
-            if(agParents[0]) {
-                nodes.push({ id: agParents[0].id, person: agParents[0], x: g2Node.x - CONFIG.node.width/3, y: CONFIG.genCoords['3'], gen: 3 });
-                links.push({ from: agParents[0].id, to: g2Node.id });
-            }
-            if(agParents[1]) {
-                nodes.push({ id: agParents[1].id, person: agParents[1], x: g2Node.x + CONFIG.node.width/3, y: CONFIG.genCoords['3'], gen: 3 });
-                links.push({ from: agParents[1].id, to: g2Node.id });
-            }
-        });
-
-
-        // --- DESCENDANCE ---
-        const children = getChildren(rootId);
-        if (children.length > 0) {
-            const totalWidth = children.length * CONFIG.node.width + (children.length - 1) * CONFIG.node.gapX;
-            let startX = -totalWidth / 2 + CONFIG.node.width / 2;
-            children.forEach(child => {
-                nodes.push({ id: child.id, person: child, x: startX, y: CONFIG.genCoords['-1'], gen: -1 });
-                links.push({ from: rootId, to: child.id });
-                startX += CONFIG.node.width + CONFIG.node.gapX;
-            });
-        }
-
-        return { nodes, links };
-    }
-
-    function renderInteractiveTree(rootId) {
-        const nodesGroup = document.getElementById('nodes-group');
-        const linksGroup = document.getElementById('links-group');
-        nodesGroup.innerHTML = '';
-        linksGroup.innerHTML = '';
-
-        const treeData = buildTreeStructure(rootId);
-
-        // Dessiner les liens (Courbes Bézier)
-        treeData.links.forEach(link => {
-            const fromNode = treeData.nodes.find(n => n.id === link.from);
-            const toNode = treeData.nodes.find(n => n.id === link.to);
-            if (!fromNode || !toNode) return;
-
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.className.baseVal = "branch";
-            
-            // Calcul points de départ (bas du parent ou haut de l'enfant)
-            let startY, endY;
-            if (fromNode.gen > toNode.gen) { // Ascendance (du haut vers le bas)
-                startY = fromNode.y + CONFIG.node.height/2;
-                endY = toNode.y - CONFIG.node.height/2;
-            } else { // Descendance
-                startY = fromNode.y + CONFIG.node.height/2;
-                endY = toNode.y - CONFIG.node.height/2;
-            }
-
-            // M x,y (départ) C x1,y1 x2,y2 x,y (courbe vers arrivée)
-            const cpY = (startY + endY) / 2; // Point de contrôle vertical
-            const d = `M ${fromNode.x} ${startY} C ${fromNode.x} ${cpY}, ${toNode.x} ${cpY}, ${toNode.x} ${endY}`;
-            path.setAttribute("d", d);
-            linksGroup.appendChild(path);
-        });
-
-        // Dessiner les Noeuds
-        treeData.nodes.forEach(nodeData => {
-            const p = nodeData.person;
-            const isSelected = p.id === rootId;
-
-            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            g.setAttribute("class", `node ${isSelected ? 'selected' : ''}`);
-            g.setAttribute("transform", `translate(${nodeData.x}, ${nodeData.y})`);
-            g.onclick = () => selectPerson(p.id);
-
-            // Rectangle fond
-            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            rect.setAttribute("x", -CONFIG.node.width / 2);
-            rect.setAttribute("y", -CONFIG.node.height / 2);
-            rect.setAttribute("width", CONFIG.node.width);
-            rect.setAttribute("height", CONFIG.node.height);
-            g.appendChild(rect);
-
-            // Photo avec clip-path (rond)
-            const imgSize = CONFIG.node.photoSize;
-            const imgX = -CONFIG.node.width / 2 + 10;
-            const imgY = -imgSize / 2;
-
-            // Définir le clipPath pour ce noeud spécifique
-            const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-            const clip = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-            const clipId = `clip-${p.id.replace(/@/g,'')}`;
-            clip.setAttribute("id", clipId);
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("cx", imgX + imgSize/2);
-            circle.setAttribute("cy", imgY + imgSize/2);
-            circle.setAttribute("r", imgSize/2);
-            clip.appendChild(circle);
-            defs.appendChild(clip);
-            g.appendChild(defs);
-
-            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            image.setAttributeNS("http://www.w3.org/1999/xlink", "href", getPhotoUrl(p));
-            image.setAttribute("x", imgX);
-            image.setAttribute("y", imgY);
-            image.setAttribute("width", imgSize);
-            image.setAttribute("height", imgSize);
-            image.setAttribute("clip-path", `url(#${clipId})`);
-            g.appendChild(image);
-
-            // Cercle bordure photo
-            const borderCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            borderCircle.setAttribute("class", "photo-circle-border");
-            borderCircle.setAttribute("cx", imgX + imgSize/2);
-            borderCircle.setAttribute("cy", imgY + imgSize/2);
-            borderCircle.setAttribute("r", imgSize/2);
-            g.appendChild(borderCircle);
-
-            // Textes
-            const textX = imgX + imgSize + 10 + (CONFIG.node.width - imgSize - 30)/2; // Centré dans l'espace restant
-            
-            const nameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            nameT.setAttribute("class", "node-name");
-            nameT.setAttribute("x", textX);
-            nameT.setAttribute("y", -5);
-            nameT.textContent = p.name;
-            g.appendChild(nameT);
-
-            const datesT = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            datesT.setAttribute("class", "node-dates");
-            datesT.setAttribute("x", textX);
-            datesT.setAttribute("y", 15);
-            datesT.textContent = `${p.birth || '?'} - ${p.death || '?'}`;
-            g.appendChild(datesT);
-
-            nodesGroup.appendChild(g);
-        });
-    }
-
-
-    // --- 5. Moteur Pan & Zoom (Cliqué-Glissé / Molette) ---
-    function setupPanZoom() {
-        const svg = document.getElementById('tree-svg');
-        const viewport = document.getElementById('tree-viewport');
-
-        // Applique les transformations CSS
-        function updateTransform() {
-            viewport.setAttribute("transform", `translate(${svgState.translate.x}, ${svgState.translate.y}) scale(${svgState.scale})`);
-        }
-
-        // --- Pan (Souris) ---
-        svg.addEventListener('mousedown', (e) => {
-            // Empêche le drag si on clique sur un noeud (qui a son propre handler selectPerson)
-            if (e.target.closest('.node')) return; 
-            
-            svgState.grabbing = true;
-            svg.classList.add('grabbing');
-            // Stocke position souris relative au SVG
-            svgState.point = { x: e.clientX, y: e.clientY };
-        });
-
-        window.addEventListener('mouseup', () => {
-            svgState.grabbing = false;
-            svg.classList.remove('grabbing');
-        });
-
-        svg.addEventListener('mousemove', (e) => {
-            if (!svgState.grabbing) return;
-            e.preventDefault();
-            
-            // Calcul du déplacement depuis le dernier event
-            const dx = e.clientX - svgState.point.x;
-            const dy = e.clientY - svgState.point.y;
-            
-            // Mise à jour translation
-            svgState.translate.x += dx;
-            svgState.translate.y += dy;
-            
-            // Stocke nouvelle position souris
-            svgState.point = { x: e.clientX, y: e.clientY };
-            updateTransform();
-        });
-
-        // --- Zoom (Molette) ---
-        svg.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const xs = (e.clientX - svgState.translate.x) / svgState.scale;
-            const ys = (e.clientY - svgState.translate.y) / svgState.scale;
-
-            const delta = -e.deltaY;
-            // Calcule nouveau scale
-            const factor = delta > 0 ? 1.1 : 0.9;
-            let newScale = svgState.scale * factor;
-            // Limites de zoom
-            newScale = Math.min(Math.max(0.2, newScale), 3);
-
-            // Ajuste translation pour zoomer vers la souris
-            svgState.translate.x = e.clientX - xs * newScale;
-            svgState.translate.y = e.clientY - ys * newScale;
-            svgState.scale = newScale;
-
-            updateTransform();
-        }, { passive: false });
-
-        // Stocke la fonction d'update pour usage externe
-        svg.updateTransform = updateTransform;
-    }
-
-    // Fonction de zoom via boutons (+/-)
-    function zoom(factor) {
-        const svg = document.getElementById('tree-svg');
-        const rect = svg.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        const xs = (centerX - svgState.translate.x) / svgState.scale;
-        const ys = (centerY - svgState.translate.y) / svgState.scale;
-
-        let newScale = svgState.scale * factor;
-        newScale = Math.min(Math.max(0.2, newScale), 3);
-
-        svgState.translate.x = centerX - xs * newScale;
-        svgState.translate.y = centerY - ys * newScale;
-        svgState.scale = newScale;
-        
-        svg.updateTransform();
-    }
-
-    function resetView() {
-        svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 1 };
-        if(currentPersonId) centerOnNode(currentPersonId);
-        else document.getElementById('tree-svg').updateTransform();
-    }
-
-    // Centre la vue sur un coordonnée de l'arbre
-    function centerOnNode(personId) {
-        // Force le rendu si onglet pas actif
-        if(!document.getElementById('nodes-group').children.length) renderInteractiveTree(personId);
-
-        const svg = document.getElementById('tree-svg');
-        const rect = svg.getBoundingClientRect();
-        
-        // Trouve les coordonnées virtuelles du noeud
-        const nodesGroup = document.getElementById('nodes-group');
-        let targetX = 0, targetY = 0;
-        
-        // Cherche le noeud sélectionné dans le DOM SVG pour obtenir sa position relative
-        for (let nodeSVG of nodesGroup.children) {
-            if(nodeSVG.classList.contains('selected')) {
-                 const transform = nodeSVG.getAttribute('transform');
-                 const match = /translate\(([^,]+),\s*([^\)]+)\)/.exec(transform);
-                 if(match) {
-                     targetX = parseFloat(match[1]);
-                     targetY = parseFloat(match[2]);
-                 }
-                 break;
-            }
-        }
-
-        // Calcule translation pour mettre target au centre du composant SVG
-        svgState.scale = 1; // Reset zoom pour centrage franc
-        svgState.translate.x = rect.width / 2 - targetX;
-        svgState.translate.y = rect.height / 2 - targetY;
-        
-        svg.updateTransform();
-    }
-
-
-    // --- 6. Navigation Onglets ---
-    function switchTab(tabId) {
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        
-        document.getElementById(tabId).classList.add('active');
-        // Trouve le bouton cliqué
-        event.currentTarget.classList.add('active');
-
-        if(tabId === 'tree-view' && currentPersonId) {
-            // Recentre si on revient sur l'arbre
-            setTimeout(()=> centerOnNode(currentPersonId), 10);
-        }
-    }
-
-    // --- 7. Rendu de la fiche détaillée (HTML) ---
-    function renderDetails(id) {
-        const p = getPerson(id);
-        const container = document.getElementById('details-content');
-        
-        // Photo et Infos de base
-        let html = `
-            <img src="${getPhotoUrl(p)}" class="details-photo-big" alt="Photo de ${p.name}">
-            <div class="details-info-hash">
-                <div class="label">Identifiant GEDCOM</div><div>${p.id}</div>
-                <div class="label">Nom Complet</div><div style="font-size:1.2em; font-weight:bold;">${p.name}</div>
-                <div class="label">Sexe</div><div>${p.sex === 'M' ? 'Homme' : (p.sex === 'F' ? 'Femme' : 'Inconnu')}</div>
-                <div class="label">Date de Naissance</div><div>${p.birth || '-'}</div>
-                <div class="label">Date de Décès</div><div>${p.death || '-'}</div>
-            </div>
-            <div style="grid-column: span 2; border-top: 2px solid #eee; margin-top:10px; padding-top:10px;">
-                <h3>Famille</h3>
-            </div>
-            <div class="details-info-hash" style="grid-column: span 2;">
-        `;
-
-        // Parents
-        const parents = getParents(id);
-        html += `<div class="label">Père</div><div>${parents[0] ? `<span class="clickable-link" onclick="selectPerson('${parents[0].id}')">${parents[0].name}</span>` : 'Inconnu'}</div>`;
-        html += `<div class="label">Mère</div><div>${parents[1] ? `<span class="clickable-link" onclick="selectPerson('${parents[1].id}')">${parents[1].name}</span>` : 'Inconnue'}</div>`;
-
-        // Unions et Enfants
-        if (p.fams && p.fams.length > 0) {
-            p.fams.forEach((famId, index) => {
-                const fam = gedcomData.families[famId];
-                if (fam) {
-                    let spouseId = fam.husb === id ? fam.wife : fam.husb;
-                    let spouse = spouseId ? getPerson(spouseId) : null;
-                    let spouseName = spouse ? spouse.name : "Inconnu(e)";
-                    
-                    html += `<div class="label" style="color:var(--accent)">Union ${index + 1}</div>
-                             <div>${spouse ? `<span class="clickable-link" onclick="selectPerson('${spouse.id}')">${spouseName}</span>` : spouseName}</div>`;
-                    
-                    // Enfants de cette union
-                    let childLinks = [];
-                    if(fam.chil) {
-                        fam.chil.forEach(cId => {
-                            const child = getPerson(cId);
-                            if(child) childLinks.push(`<span class="clickable-link" onclick="selectPerson('${child.id}')">${child.name}</span>`);
-                        });
-                    }
-
-                    if (childLinks.length > 0) {
-                        html += `<div class="label">Enfants (${childLinks.length})</div><div>${childLinks.join('<br>')}</div>`;
-                    }
-                }
-            });
-        } else {
-             html += `<div class="label">Unions</div><div>Aucune union enregistrée</div>`;
-        }
-
-        html += `</div>`; // Fin grid famille
-
-        // Tag FILE brut si existe
-        if(p.photo) {
-             html += `<div style="grid-column: span 2; font-size:0.8em; color:#888; margin-top:20px; border-top:1px solid #eee">Chemin image GEDCOM : ${p.photo}</div>`;
-        }
-
-        container.innerHTML = html;
-    }
-</script>
-
-</body>
-</html>
+        if (!
