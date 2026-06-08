@@ -87,7 +87,8 @@
         #tree-svg { width: 100%; height: 100%; background-color: #e0e4e8; cursor: grab; }
         #tree-svg.grabbing { cursor: grabbing; }
 
-        .branch { stroke: #95a5a6; stroke-width: 2px; fill: none; }
+        /* Rayon de bordure (arrondi) pour les chemins orthogonaux */
+        .branch { stroke: #95a5a6; stroke-width: 2px; fill: none; stroke-linejoin: round; }
         .branch.spouse-branch { stroke: var(--union); stroke-dasharray: 6,4; }
         
         .node { cursor: pointer; }
@@ -104,7 +105,6 @@
         .node-name-g4-last { font-size: 11px; font-weight: bold; fill: var(--secondary); text-anchor: middle; text-transform: uppercase; }
         .node-dates-g4 { font-size: 10px; fill: #7f8c8d; text-anchor: middle; }
 
-        /* Bordure de photo amincie */
         .photo-circle-border { fill: none; stroke-width: 1.5px; }
 
         .zoom-controls {
@@ -172,7 +172,7 @@
 <script>
     // --- Configuration Visuelle ---
     const CONFIG = {
-        stdWidth: 240,    // Cases élargies à 240px
+        stdWidth: 240,    
         stdHeight: 75,
         g4Width: 105,     
         g4Height: 100,    
@@ -182,7 +182,7 @@
 
     let gedcomData = { individuals: {}, families: {} };
     let currentPersonId = null;
-    let svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 1 };
+    let svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 0.8 }; // Dézoom initial 80%
 
     // --- Parser GEDCOM ---
     function parseGedcom(text) {
@@ -210,11 +210,11 @@
                 if (tag === 'INDI') {
                     currentType = 'INDI';
                     currentEntity = id;
-                    gedcomData.individuals[id] = { id, name: "Inconnu", firstName: "", lastName: "", birth: "", death: "", sex: null, photo: null, famc: null, fams: [] };
+                    gedcomData.individuals[id] = { id, name: "Inconnu", firstName: "", lastName: "", birth: "", death: "", birthPlace: "", deathPlace: "", sex: null, photo: null, famc: null, fams: [], occu: "", educ: [], mil: [] };
                 } else if (tag === 'FAM') {
                     currentType = 'FAM';
                     currentEntity = id;
-                    gedcomData.families[id] = { id, husb: null, wife: null, chil: [] };
+                    gedcomData.families[id] = { id, husb: null, wife: null, chil: [], uType: "", uDate: "", uPlace: "" };
                 } else { currentType = null; }
             } else if (level > 0 && currentType === 'INDI' && currentEntity) {
                 const person = gedcomData.individuals[currentEntity];
@@ -224,24 +224,32 @@
                         let nameRaw = value;
                         let fname = nameRaw.replace(/\/[^\/]*\//, '').trim(); 
                         let lnameMatch = nameRaw.match(/\/(.*?)\//);
-                        
                         person.name = nameRaw.replace(/\//g, '').trim();
                         person.firstName = fname || person.name;
                         person.lastName = lnameMatch ? lnameMatch[1].trim() : '';
                     }
                     else if (tag === 'SEX') person.sex = value.trim();
+                    else if (tag === 'OCCU') person.occu = value.trim();
+                    else if (tag === 'EDUC') person.educ.push(value.trim());
+                    else if (tag === 'TITL') person.mil.push(value.trim());
                     else if (tag === 'BIRT') currentContext = 'BIRT';
                     else if (tag === 'DEAT') currentContext = 'DEAT';
                     else if (tag === 'OBJE') currentContext = 'OBJE'; 
+                    else if (tag === 'EVEN') currentContext = 'EVEN_INDI';
                     else if (tag === 'FAMC') person.famc = value; 
                     else if (tag === 'FAMS') person.fams.push(value); 
                 } else if (level === 2 && currentContext) {
                     if (tag === 'DATE') {
                         if (currentContext === 'BIRT') person.birth = value;
                         if (currentContext === 'DEAT') person.death = value;
+                    } else if (tag === 'PLAC') {
+                        if (currentContext === 'BIRT') person.birthPlace = value;
+                        if (currentContext === 'DEAT') person.deathPlace = value;
                     } else if (tag === 'FILE' && currentContext === 'OBJE') {
                         if (!person.photo) person.photo = value.trim(); 
                         currentContext = null; 
+                    } else if (tag === 'TYPE' && currentContext === 'EVEN_INDI') {
+                        if (value.toLowerCase().includes('milit')) person.mil.push(value);
                     }
                 }
             } else if (level > 0 && currentType === 'FAM' && currentEntity) {
@@ -250,6 +258,24 @@
                     if (tag === 'HUSB') fam.husb = value;
                     else if (tag === 'WIFE') fam.wife = value;
                     else if (tag === 'CHIL') fam.chil.push(value);
+                    else if (['MARR', 'MARL', 'DIV', 'ENGA', '_PACS'].includes(tag)) {
+                        currentContext = 'UNION';
+                        if (!fam.uType) {
+                            if (tag === 'MARR') fam.uType = 'Mariage';
+                            else if (tag === 'DIV') fam.uType = 'Divorce';
+                            else if (tag === 'ENGA') fam.uType = 'Fiançailles';
+                            else fam.uType = 'PACS / Contrat';
+                        }
+                    } else if (tag === 'EVEN') {
+                        currentContext = 'UNION';
+                    }
+                } else if (level === 2 && currentContext === 'UNION') {
+                    if (tag === 'DATE') fam.uDate = value;
+                    if (tag === 'PLAC') fam.uPlace = value;
+                    if (tag === 'TYPE') {
+                        if (value.toLowerCase().includes('pacs')) fam.uType = 'PACS';
+                        else if (value.toLowerCase().includes('non mari')) fam.uType = 'Relation non mariée';
+                    }
                 }
             }
         }
@@ -317,11 +343,15 @@
         return str.length > len ? str.substring(0, len-2) + '..' : str;
     }
 
-    // Formatage Spécial : Date (mois minuscules et pas de '?' si manque)
+    // Convertit "12 JAN 1900" en "12 jan 1900"
+    function formatDetailsDate(dateStr) {
+        return dateStr ? dateStr.replace(/[A-Z]{3}/g, m => m.toLowerCase()) : '';
+    }
+
+    // Formatage Spécial pour l'arbre : Date (pas de '?' si manque)
     function formatDateLine(birth, death) {
-        let b = birth ? birth.replace(/[A-Z]{3}/g, m => m.toLowerCase()) : '';
-        let d = death ? death.replace(/[A-Z]{3}/g, m => m.toLowerCase()) : '';
-        
+        let b = formatDetailsDate(birth);
+        let d = formatDetailsDate(death);
         if (b && d) return `${b} - ${d}`;
         if (b) return b;
         if (d) return `- ${d}`;
@@ -332,19 +362,17 @@
     function formatNameStd(firstName, lastName) {
         const LAST = (lastName || '').toUpperCase();
         const first = firstName || '';
-        const maxLen = 30; // Limite pour case de 240px
+        const maxLen = 30; 
         
         let full = `${first} ${LAST}`.trim();
         if (full.length <= maxLen) return full;
         
-        // Coupe du prénom : Ne garde que le 1er mot
         let firstFirst = first.split(' ')[0];
         let attempt1 = `${firstFirst}... ${LAST}`.trim();
         if (attempt1.length <= maxLen) return attempt1;
         
-        // Si toujours trop long, coupe du NOM
         let allowedLast = maxLen - firstFirst.length - 7;
-        if (allowedLast < 2) allowedLast = 2; // Sécurité
+        if (allowedLast < 2) allowedLast = 2; 
         return `${firstFirst}... ${LAST.substring(0, allowedLast)}...`;
     }
 
@@ -390,18 +418,16 @@
         return children;
     }
 
-    // --- Moteur de Layout DYNAMIQUE ET COMPACT ---
+    // --- Moteur de Layout ---
     function buildTreeStructure(rootId) {
         const nodes = []; 
         const links = []; 
         const pRoot = getPerson(rootId);
 
-        // 1. Algorithme de construction (Bottom-Up)
         function createTree(personId, gen) {
             if (!personId || gen > 4) return null;
             const p = getPerson(personId);
             if (!p) return null;
-            
             const node = { id: p.id, person: p, gen: gen, father: null, mother: null, width: 0, x: 0 };
             
             if (gen < 4) {
@@ -419,11 +445,9 @@
             return node;
         }
 
-        // 2. Positionnement X (Top-Down)
         function setPositions(node, currentX) {
             if (!node) return;
             node.x = currentX;
-            
             if (node.father && node.mother) {
                 const totalW = node.father.width + node.mother.width;
                 const startX = currentX - totalW / 2;
@@ -436,7 +460,6 @@
             }
         }
 
-        // 3. Aplatir l'arbre Ascendant
         function flattenAscendants(node) {
             if (!node) return;
             nodes.push({ id: node.id, person: node.person, x: node.x, y: CONFIG.genCoords[node.gen], gen: node.gen, role: node.gen === 0 ? 'center' : 'ascendant' });
@@ -457,7 +480,7 @@
             flattenAscendants(rootTree);
         }
 
-        // 4. Frères et Soeurs (à gauche) + Ajout de la liaison G1 -> G0
+        // Frères et Soeurs
         const siblings = [];
         if (pRoot && pRoot.famc) {
             const fam = gedcomData.families[pRoot.famc];
@@ -476,7 +499,6 @@
             siblingX -= (CONFIG.stdWidth + CONFIG.gapX);
         });
 
-        // Décaler les ascendants pour rester parfaitement centré sur la fratrie
         if (siblings.length > 0) {
             let shiftX = - (siblings.length * (CONFIG.stdWidth + CONFIG.gapX)) / 2;
             nodes.forEach(n => {
@@ -484,7 +506,6 @@
             });
         }
 
-        // Lien orthgonal (Crochet) G1 -> G0 pour la fratrie
         const parents = getParents(rootId);
         if (parents[0] || parents[1]) {
             links.push({
@@ -495,7 +516,7 @@
             });
         }
 
-        // 5. Ajouter les Conjoints (à droite du sujet central)
+        // Conjoints
         let spouseX = CONFIG.stdWidth + CONFIG.gapX; 
         let prevSpouseId = rootId; 
         if (pRoot && pRoot.fams) {
@@ -517,7 +538,7 @@
             });
         }
 
-        // 6. Ajouter les Enfants (G-1)
+        // Enfants
         const children = getChildren(rootId);
         if (children.length > 0) {
             const stdSpan = CONFIG.stdWidth + CONFIG.gapX;
@@ -550,6 +571,7 @@
         treeData.links.forEach(link => {
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             
+            // Lignes de Fratrie (Crochets orthogonaux)
             if (link.type === 'g1-to-g0') {
                 const fNode = treeData.nodes.find(n => n.id === link.father);
                 const mNode = treeData.nodes.find(n => n.id === link.mother);
@@ -564,8 +586,7 @@
 
                 if (fNode && mNode) {
                     parentCenterX = (fNode.x + mNode.x) / 2;
-                    d += `M ${fNode.x} ${startY} L ${fNode.x} ${midY - 15} `;
-                    d += `L ${mNode.x} ${midY - 15} L ${mNode.x} ${startY} `;
+                    d += `M ${fNode.x} ${startY} L ${fNode.x} ${midY - 15} L ${mNode.x} ${midY - 15} L ${mNode.x} ${startY} `;
                     d += `M ${parentCenterX} ${midY - 15} L ${parentCenterX} ${midY} `;
                 } else if (fNode) {
                     parentCenterX = fNode.x;
@@ -602,9 +623,10 @@
                     const toSize = getNodeSize(toNode.gen);
                     let startY = fromNode.y + fromSize.h/2;
                     let endY = toNode.y - toSize.h/2;
+                    const midY = (startY + endY) / 2; 
                     
-                    const cpY = (startY + endY) / 2; 
-                    path.setAttribute("d", `M ${fromNode.x} ${startY} C ${fromNode.x} ${cpY}, ${toNode.x} ${cpY}, ${toNode.x} ${endY}`);
+                    // Lignes Orthogonales pour tous (Parent -> Enfant normal)
+                    path.setAttribute("d", `M ${fromNode.x} ${startY} L ${fromNode.x} ${midY} L ${toNode.x} ${midY} L ${toNode.x} ${endY}`);
                     path.setAttribute("class", "branch");
                 }
             }
@@ -622,7 +644,6 @@
             g.setAttribute("transform", `translate(${nodeData.x}, ${nodeData.y})`);
             g.onclick = () => selectPerson(p.id);
 
-            // Boîte
             const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             rect.setAttribute("x", -size.w / 2);
             rect.setAttribute("y", -size.h / 2);
@@ -630,7 +651,6 @@
             rect.setAttribute("height", size.h);
             g.appendChild(rect);
 
-            // ClipPath (Rond Photo)
             const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
             const clipId = `clip-${nodeData.id.replace(/@/g,'')}-${nodeData.role || ''}`;
             const clip = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
@@ -644,13 +664,11 @@
             image.setAttributeNS("http://www.w3.org/1999/xlink", "href", getPhotoUrl(p));
             image.setAttribute("clip-path", `url(#${clipId})`);
             
-            // Bordure Colorée Photo
             const borderCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             borderCircle.setAttribute("class", "photo-circle-border");
             borderCircle.setAttribute("stroke", getBorderColor(p.sex));
 
             if (isG4) {
-                // Photo centrée en haut (G4)
                 const imgRadius = 18;
                 const imgSize = imgRadius * 2;
                 const imgX = -imgRadius;
@@ -696,7 +714,6 @@
                 g.appendChild(dt);
 
             } else {
-                // Photo alignée à gauche (Standard G-1 à G3)
                 const imgRadius = 25;
                 const imgSize = imgRadius * 2;
                 const imgX = -size.w/2 + 10;
@@ -794,7 +811,7 @@
     }
 
     function resetView() {
-        svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 1 };
+        svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 0.8 };
         if(currentPersonId) centerOnNode(currentPersonId);
         else document.getElementById('tree-svg').updateTransform();
     }
@@ -812,9 +829,9 @@
                  break;
             }
         }
-        svgState.scale = 1; 
-        svgState.translate.x = svg.getBoundingClientRect().width / 2 - targetX;
-        svgState.translate.y = svg.getBoundingClientRect().height / 2 - targetY;
+        svgState.scale = 0.8; // Applique le dézoom à 80% lors du centrage
+        svgState.translate.x = svg.getBoundingClientRect().width / 2 - targetX * svgState.scale;
+        svgState.translate.y = svg.getBoundingClientRect().height / 2 - targetY * svgState.scale;
         svg.updateTransform();
     }
 
@@ -832,19 +849,22 @@
         const p = getPerson(id);
         const container = document.getElementById('details-content');
         
+        // Block Informations Principales
         let html = `
             <img src="${getPhotoUrl(p)}" class="details-photo-big" style="border-color: ${getBorderColor(p.sex)}" alt="Photo">
             <div class="details-info-hash">
                 <div class="label">Identifiant</div><div>${p.id}</div>
                 <div class="label">Nom Complet</div><div style="font-size:1.2em; font-weight:bold;">${p.name}</div>
                 <div class="label">Sexe</div><div>${p.sex === 'M' ? 'Homme' : (p.sex === 'F' ? 'Femme' : 'Inconnu')}</div>
-                <div class="label">Naissance</div><div>${p.birth || '-'}</div>
-                <div class="label">Décès</div><div>${p.death || '-'}</div>
+                <div class="label">Profession</div><div>${p.occu || '-'}</div>
+                <div class="label">Naissance</div><div>${formatDetailsDate(p.birth) || '-'} ${p.birthPlace ? 'à ' + p.birthPlace : ''}</div>
+                <div class="label">Décès</div><div>${formatDetailsDate(p.death) || '-'} ${p.deathPlace ? 'à ' + p.deathPlace : ''}</div>
             </div>
             <div style="grid-column: span 2; border-top: 2px solid #eee; margin-top:10px; padding-top:10px;"><h3>Famille</h3></div>
             <div class="details-info-hash" style="grid-column: span 2;">
         `;
 
+        // Block Famille
         const parents = getParents(id);
         html += `<div class="label">Père</div><div>${parents[0] ? `<span class="clickable-link" onclick="selectPerson('${parents[0].id}')">${parents[0].name}</span>` : 'Inconnu'}</div>`;
         html += `<div class="label">Mère</div><div>${parents[1] ? `<span class="clickable-link" onclick="selectPerson('${parents[1].id}')">${parents[1].name}</span>` : 'Inconnue'}</div>`;
@@ -855,8 +875,16 @@
                 if (fam) {
                     let spouseId = fam.husb === id ? fam.wife : fam.husb;
                     let spouse = spouseId ? getPerson(spouseId) : null;
-                    html += `<div class="label" style="color:var(--union)">Union ${index + 1}</div>
-                             <div>${spouse ? `<span class="clickable-link" onclick="selectPerson('${spouse.id}')">${spouse.name}</span>` : 'Inconnu(e)'}</div>`;
+                    
+                    // Info de l'union
+                    let unionType = fam.uType || 'Union';
+                    let unionDetail = '';
+                    if (fam.uDate || fam.uPlace) {
+                        unionDetail = `<br><small style="color:#666;">${formatDetailsDate(fam.uDate) || '?'} ${fam.uPlace ? 'à ' + fam.uPlace : ''}</small>`;
+                    }
+                    
+                    html += `<div class="label" style="color:var(--union)">${unionType} ${index + 1}</div>
+                             <div>${spouse ? `<span class="clickable-link" onclick="selectPerson('${spouse.id}')">${spouse.name}</span>` : 'Inconnu(e)'}${unionDetail}</div>`;
                     
                     let childLinks = [];
                     if(fam.chil) {
@@ -872,6 +900,22 @@
              html += `<div class="label">Unions</div><div>Aucune union enregistrée</div>`;
         }
         html += `</div>`;
+        
+        // Block Distinctions et Diplômes
+        let hasDistinctions = (p.educ && p.educ.length > 0) || (p.mil && p.mil.length > 0);
+        if (hasDistinctions) {
+            html += `<div style="grid-column: span 2; border-top: 2px solid #eee; margin-top:10px; padding-top:10px;"><h3>Distinctions & Diplômes</h3></div>
+                     <div class="details-info-hash" style="grid-column: span 2;">`;
+            
+            if (p.educ && p.educ.length > 0) {
+                html += `<div class="label">Éducation / Diplômes</div><div>${p.educ.join('<br>')}</div>`;
+            }
+            if (p.mil && p.mil.length > 0) {
+                html += `<div class="label">Titres / Militaire</div><div>${p.mil.join('<br>')}</div>`;
+            }
+            html += `</div>`;
+        }
+
         container.innerHTML = html;
     }
 </script>
