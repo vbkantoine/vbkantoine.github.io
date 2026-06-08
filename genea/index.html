@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorateur Généalogique GEDCOM</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #3498db;
+            --bg: #f5f6fa;
+            --card-bg: #ffffff;
+            --border: #dcdde1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 { text-align: center; color: var(--primary); }
+
+        /* Setup & Search */
+        #setup-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        #loading-msg {
+            font-weight: bold;
+            color: var(--accent);
+            text-align: center;
+            padding: 10px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 16px;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        #search-results {
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: white;
+            display: none;
+            position: absolute;
+            z-index: 10;
+            text-align: left;
+            margin-top: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .search-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        .search-item:hover { background-color: #f1f2f6; }
+
+        /* Tabs */
+        .tabs {
+            display: none;
+            justify-content: center;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom: 3px solid var(--accent);
+        }
+
+        /* Views */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        /* Tree Styles */
+        .tree-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            overflow-x: auto;
+            padding: 20px 0;
+        }
+
+        .generation {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .person-node {
+            background: var(--card-bg);
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            padding: 10px;
+            min-width: 150px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 14px;
+        }
+        
+        .person-node.main-person { background-color: #e3f2fd; border-color: #2196f3; font-weight: bold; }
+        .person-node.empty { border-style: dashed; border-color: #ccc; color: #999; }
+        
+        .node-name { font-weight: bold; margin-bottom: 5px; }
+        .node-dates { font-size: 12px; color: #666; }
+
+        .gen-label { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: -10px; text-align: center; }
+
+        /* Details Style */
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 10px;
+        }
+        .details-grid div { padding: 8px; border-bottom: 1px solid #eee; }
+        .details-grid .label { font-weight: bold; color: var(--secondary); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Explorateur d'Arbre Généalogique</h1>
+    
+    <div id="setup-section">
+        <div id="loading-msg">⏳ Chargement de la base de données (arbre.ged) en cours...</div>
+        
+        <div id="search-container" style="display: none; position: relative; width: 80%; max-width: 400px; text-align: center;">
+            <label for="search-input">Recherchez une personne :</label><br><br>
+            <input type="text" id="search-input" placeholder="Tapez un nom (ex: Dupont)..." autocomplete="off">
+            <div id="search-results"></div>
+        </div>
+    </div>
+
+    <div class="tabs" id="tabs-container">
+        <button class="tab-btn active" onclick="switchTab('tree-view')">Arbre (3 Asc / 1 Desc)</button>
+        <button class="tab-btn" onclick="switchTab('details-view')">Fiche Détaillée</button>
+    </div>
+
+    <div id="tree-view" class="view-section active">
+        <div id="tree-content" class="tree-container">
+            </div>
+    </div>
+
+    <div id="details-view" class="view-section">
+        <div id="details-content" class="details-grid">
+            </div>
+    </div>
+</div>
+
+<script>
+    // --- Variables Globales ---
+    let gedcomData = {
+        individuals: {}, 
+        families: {}     
+    };
+    let currentPersonId = null;
+
+    // --- 1. Parser GEDCOM ---
+    function parseGedcom(text) {
+        const lines = text.split('\n');
+        let currentEntity = null;
+        let currentType = null; 
+        let currentContext = null; 
+
+        gedcomData.individuals = {};
+        gedcomData.families = {};
+
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+
+            const match = line.match(/^(\d+)\s+(@[A-Z0-9_]+@)?\s*([A-Z_]+)?\s*(.*)$/);
+            if (!match) continue;
+
+            const level = parseInt(match[1]);
+            const id = match[2];
+            const tag = match[3] || match[4]; 
+            const value = match[3] ? match[4] : "";
+
+            if (level === 0 && id) {
+                if (tag === 'INDI') {
+                    currentType = 'INDI';
+                    currentEntity = id;
+                    gedcomData.individuals[id] = { id: id, name: "Inconnu", birth: "", death: "", famc: null, fams: [] };
+                } else if (tag === 'FAM') {
+                    currentType = 'FAM';
+                    currentEntity = id;
+                    gedcomData.families[id] = { id: id, husb: null, wife: null, chil: [] };
+                } else {
+                    currentType = null;
+                }
+                currentContext = null;
+            } else if (level > 0 && currentType === 'INDI') {
+                const person = gedcomData.individuals[currentEntity];
+                if (level === 1) {
+                    if (tag === 'NAME') person.name = value.replace(/\//g, '');
+                    else if (tag === 'BIRT') currentContext = 'BIRT';
+                    else if (tag === 'DEAT') currentContext = 'DEAT';
+                    else if (tag === 'FAMC') person.famc = value; 
+                    else if (tag === 'FAMS') person.fams.push(value); 
+                    else currentContext = null;
+                } else if (level === 2 && tag === 'DATE') {
+                    if (currentContext === 'BIRT') person.birth = value;
+                    if (currentContext === 'DEAT') person.death = value;
+                }
+            } else if (level > 0 && currentType === 'FAM') {
+                const fam = gedcomData.families[currentEntity];
+                if (level === 1) {
+                    if (tag === 'HUSB') fam.husb = value;
+                    else if (tag === 'WIFE') fam.wife = value;
+                    else if (tag === 'CHIL') fam.chil.push(value);
+                }
+            }
+        }
+    }
+
+    // --- 2. Chargement Automatique du fichier & Recherche ---
+    document.addEventListener("DOMContentLoaded", () => {
+        const loadingMsg = document.getElementById('loading-msg');
+        
+        // Requête pour récupérer arbre.ged à la racine du serveur
+        fetch('arbre.ged')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Impossible de trouver le fichier arbre.ged.");
+                }
+                return response.text();
+            })
+            .then(text => {
+                parseGedcom(text);
+                loadingMsg.style.display = 'none';
+                document.getElementById('search-container').style.display = 'block';
+                document.getElementById('search-input').focus();
+            })
+            .catch(error => {
+                console.error("Erreur :", error);
+                loadingMsg.innerHTML = `<span style="color: #e74c3c;">❌ Erreur : Impossible de charger l'arbre. Vérifiez que le fichier "arbre.ged" est bien présent sur le serveur web.</span>`;
+            });
+    });
+
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        searchResults.innerHTML = '';
+        
+        if (query.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        const matches = Object.values(gedcomData.individuals)
+            .filter(p => p.name.toLowerCase().includes(query))
+            .slice(0, 15); 
+
+        if (matches.length > 0) {
+            searchResults.style.display = 'block';
+            matches.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.textContent = `${p.name} (Né(e): ${p.birth || '?'})`;
+                div.onclick = () => selectPerson(p.id);
+                searchResults.appendChild(div);
+            });
+        } else {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (e.target !== searchInput && e.target !== searchResults) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    // --- 3. Navigation et Affichage ---
+    function selectPerson(id) {
+        currentPersonId = id;
+        const person = gedcomData.individuals[id];
+        searchInput.value = person.name;
+        searchResults.style.display = 'none';
+        
+        document.getElementById('tabs-container').style.display = 'flex';
+        renderTree(id);
+        renderDetails(id);
+        switchTab('tree-view');
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // --- 4. Rendu de l'Arbre ---
+    function getParents(personId) {
+        const p = gedcomData.individuals[personId];
+        if (!p || !p.famc) return { father: null, mother: null };
+        const fam = gedcomData.families[p.famc];
+        if (!fam) return { father: null, mother: null };
+        return { 
+            father: fam.husb ? gedcomData.individuals[fam.husb] : null, 
+            mother: fam.wife ? gedcomData.individuals[fam.wife] : null 
+        };
+    }
+
+    function getChildren(personId) {
+        const p = gedcomData.individuals[personId];
+        let children = [];
+        if (!p || !p.fams) return children;
+        p.fams.forEach(famId => {
+            const fam = gedcomData.families[famId];
+            if (fam && fam.chil) {
+                fam.chil.forEach(childId => {
+                    if (gedcomData.individuals[childId]) {
+                        children.push(gedcomData.individuals[childId]);
+                    }
+                });
+            }
+        });
+        return children;
+    }
+
+    function createNodeHtml(person, cssClass = "") {
+        if (!person) return `<div class="person-node empty">Inconnu</div>`;
+        return `
+            <div class="person-node ${cssClass}" onclick="selectPerson('${person.id}')" style="cursor: pointer;" title="Cliquez pour centrer l'arbre sur cette personne">
+                <div class="node-name">${person.name}</div>
+                <div class="node-dates">${person.birth ? '°'+person.birth : ''} <br> ${person.death ? '†'+person.death : ''}</div>
+            </div>
+        `;
+    }
+
+    function renderTree(id) {
+        const treeContainer = document.getElementById('tree-content');
+        const mainPerson = gedcomData.individuals[id];
+        
+        const parents = getParents(id);
+        const f = parents.father ? parents.father.id : null;
+        const m = parents.mother ? parents.mother.id : null;
+        const gp_ff = f ? getParents(f) : {father: null, mother: null};
+        const gp_fm = m ? getParents(m) : {father: null, mother: null};
+        const children = getChildren(id);
+
+        let html = '';
+
+        const ggp_fff = gp_ff.father ? getParents(gp_ff.father.id) : {father:null, mother:null};
+        const ggp_ffm = gp_ff.mother ? getParents(gp_ff.mother.id) : {father:null, mother:null};
+        const ggp_fmf = gp_fm.father ? getParents(gp_fm.father.id) : {father:null, mother:null};
+        const ggp_fmm = gp_fm.mother ? getParents(gp_fm.mother.id) : {father:null, mother:null};
+
+        html += `<div class="gen-label">Génération +3 (Arrière-grands-parents)</div>`;
+        html += `<div class="generation">
+            ${createNodeHtml(ggp_fff.father)} ${createNodeHtml(ggp_fff.mother)}
+            ${createNodeHtml(ggp_ffm.father)} ${createNodeHtml(ggp_ffm.mother)}
+            ${createNodeHtml(ggp_fmf.father)} ${createNodeHtml(ggp_fmf.mother)}
+            ${createNodeHtml(ggp_fmm.father)} ${createNodeHtml(ggp_fmm.mother)}
+        </div>`;
+
+        html += `<div class="gen-label">Génération +2 (Grands-parents)</div>`;
+        html += `<div class="generation">
+            ${createNodeHtml(gp_ff.father)} ${createNodeHtml(gp_ff.mother)}
+            ${createNodeHtml(gp_fm.father)} ${createNodeHtml(gp_fm.mother)}
+        </div>`;
+
+        html += `<div class="gen-label">Génération +1 (Parents)</div>`;
+        html += `<div class="generation">
+            ${createNodeHtml(parents.father)}
+            ${createNodeHtml(parents.mother)}
+        </div>`;
+
+        html += `<div class="gen-label">Personne Sélectionnée</div>`;
+        html += `<div class="generation">
+            ${createNodeHtml(mainPerson, "main-person")}
+        </div>`;
+
+        if (children.length > 0) {
+            html += `<div class="gen-label">Génération -1 (Enfants)</div>`;
+            html += `<div class="generation">`;
+            children.forEach(child => {
+                html += createNodeHtml(child);
+            });
+            html += `</div>`;
+        } else {
+             html += `<div class="gen-label">Génération -1 (Aucun enfant enregistré)</div>`;
+        }
+
+        treeContainer.innerHTML = html;
+    }
+
+    // --- 5. Rendu de la fiche détaillée ---
+    function renderDetails(id) {
+        const person = gedcomData.individuals[id];
+        const container = document.getElementById('details-content');
+        
+        let html = `
+            <div class="label">Nom Complet</div><div>${person.name || '-'}</div>
+            <div class="label">Date de Naissance</div><div>${person.birth || '-'}</div>
+            <div class="label">Date de Décès</div><div>${person.death || '-'}</div>
+        `;
+
+        const parents = getParents(id);
+        const parentStr = [parents.father?.name, parents.mother?.name].filter(Boolean).join(" & ") || "Inconnus";
+        html += `<div class="label">Parents</div><div>${parentStr}</div>`;
+
+        if (person.fams && person.fams.length > 0) {
+            person.fams.forEach((famId, index) => {
+                const fam = gedcomData.families[famId];
+                if (fam) {
+                    let spouseId = fam.husb === id ? fam.wife : fam.husb;
+                    let spouseName = spouseId && gedcomData.individuals[spouseId] ? gedcomData.individuals[spouseId].name : "Inconnu(e)";
+                    html += `<div class="label">Conjoint(e) ${index + 1}</div><div>${spouseName}</div>`;
+                    
+                    let childrenNames = fam.chil.map(cId => gedcomData.individuals[cId] ? gedcomData.individuals[cId].name : "").filter(Boolean);
+                    if (childrenNames.length > 0) {
+                        html += `<div class="label">Enfants (Union ${index + 1})</div><div>${childrenNames.join(', ')}</div>`;
+                    }
+                }
+            });
+        }
+
+        container.innerHTML = html;
+    }
+</script>
+
+</body>
+</html>
