@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explorateur Généalogique Interactif</title>
+    <title>Explorateur Généalogique Sécurisé</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -39,9 +39,16 @@
 
         h1 { margin: 0 0 10px 0; font-size: 1.2rem; color: var(--primary); }
 
-        #setup-section { width: 100%; max-width: 500px; text-align: center; }
-        #loading-msg { font-weight: bold; color: var(--accent); padding: 10px; }
+        /* Setup & Password */
+        #setup-section { width: 100%; max-width: 500px; text-align: center; margin-bottom: 5px; }
+        #password-form { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 10px; }
+        #password-form p { margin: 0; font-weight: bold; color: var(--secondary); }
+        #decrypt-password { padding: 10px; border-radius: 20px; border: 1px solid var(--border); width: 100%; max-width: 250px; text-align: center; font-size: 16px; }
+        #decrypt-btn { background: var(--accent); color: white; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; }
+        #decrypt-btn:hover { background: #2980b9; }
+        #loading-msg { font-weight: bold; padding: 5px; font-size: 0.9em; }
 
+        /* Search */
         .search-box { position: relative; width: 100%; }
         input[type="text"] {
             padding: 10px;
@@ -71,6 +78,7 @@
         .search-item:hover { background-color: #f1f2f6; }
         .search-item img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc;}
 
+        /* Tabs */
         .tabs { display: none; justify-content: center; gap: 5px; margin-top: 10px; }
         .tab-btn {
             background: #eee; border: none; padding: 8px 15px;
@@ -79,6 +87,7 @@
         }
         .tab-btn.active { background: var(--accent); color: white; }
 
+        /* Views */
         #main-content { flex: 1; position: relative; overflow: hidden; }
         .view-section { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         .view-section.active { display: block; }
@@ -101,7 +110,7 @@
         .node-name-last { font-size: 13px; font-weight: bold; fill: var(--primary); text-anchor: middle; text-transform: uppercase; }
         .node-dates { font-size: 11px; fill: #7f8c8d; text-anchor: middle; }
         
-        /* Textes (G4 - Arrière-arrière grands parents) */
+        /* Textes (G4) */
         .node-name-g4 { font-size: 11px; font-weight: bold; fill: var(--primary); text-anchor: middle; }
         .node-name-g4-last { font-size: 11px; font-weight: bold; fill: var(--secondary); text-anchor: middle; text-transform: uppercase; }
         .node-dates-g4 { font-size: 10px; fill: #7f8c8d; text-anchor: middle; }
@@ -136,9 +145,14 @@
 <body>
 
 <header>
-    <h1>Explorateur Généalogique</h1>
+    <h1>Explorateur Généalogique Sécurisé</h1>
     <div id="setup-section">
-        <div id="loading-msg">⏳ Chargement de "arbre.ged"...</div>
+        <div id="password-form">
+            <p>🔒 Fichier protégé (arbre.enc)</p>
+            <input type="password" id="decrypt-password" placeholder="Mot de passe...">
+            <button id="decrypt-btn" onclick="loadAndDecrypt()">Déverrouiller</button>
+        </div>
+        <div id="loading-msg"></div>
         <div id="search-container" class="search-box" style="display: none;">
             <input type="text" id="search-input" placeholder="Rechercher une personne..." autocomplete="off">
             <div id="search-results"></div>
@@ -173,8 +187,8 @@
 <script>
     // --- Configuration Visuelle ---
     const CONFIG = {
-        stdWidth: 200,    // Largeur réduite grâce au nom sur 2 lignes
-        stdHeight: 80,    // Légèrement plus haut pour aérer les 3 lignes
+        stdWidth: 200,    
+        stdHeight: 80,    
         g4Width: 105,     
         g4Height: 100,    
         gapX: 10,         
@@ -185,13 +199,83 @@
     let currentPersonId = null;
     let svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 0.8 };
 
+    // --- Moteur de Déchiffrement AES-GCM ---
+    document.getElementById('decrypt-password').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') loadAndDecrypt();
+    });
+
+    async function loadAndDecrypt() {
+        const pwd = document.getElementById('decrypt-password').value;
+        const msgDiv = document.getElementById('loading-msg');
+        
+        if (!pwd) {
+            msgDiv.innerHTML = "<span style='color: #e74c3c;'>Veuillez entrer un mot de passe.</span>";
+            return;
+        }
+
+        msgDiv.style.color = 'var(--secondary)';
+        msgDiv.innerHTML = "⏳ Téléchargement et déchiffrement...";
+
+        try {
+            // 1. Récupération du fichier chiffré depuis le serveur
+            const response = await fetch('arbre.enc');
+            if (!response.ok) throw new Error("Fichier 'arbre.enc' introuvable sur le serveur.");
+            const buffer = await response.arrayBuffer();
+
+            // 2. Séparation des éléments cryptographiques (Sel, IV, Données)
+            const salt = buffer.slice(0, 16);
+            const iv = buffer.slice(16, 28);
+            const data = buffer.slice(28);
+
+            // 3. Dérivation de la clé avec le mot de passe fourni
+            const encoder = new TextEncoder();
+            const passwordBytes = encoder.encode(pwd);
+
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw", passwordBytes, { name: "PBKDF2" }, false, ["deriveKey"]
+            );
+
+            const key = await window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["decrypt"]
+            );
+
+            // 4. Déchiffrement
+            const decryptedContent = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                data
+            );
+
+            // 5. Conversion en texte et Parsing
+            const decoder = new TextDecoder('utf-8');
+            const gedcomText = decoder.decode(decryptedContent);
+            
+            parseGedcom(gedcomText);
+
+            // 6. Mise à jour de l'interface
+            document.getElementById('password-form').style.display = 'none';
+            msgDiv.style.display = 'none';
+            document.getElementById('search-container').style.display = 'block';
+            document.getElementById('search-input').focus();
+            setupPanZoom();
+
+        } catch (error) {
+            console.error(error);
+            msgDiv.innerHTML = "<span style='color: #e74c3c;'>❌ Mot de passe incorrect ou fichier invalide.</span>";
+        }
+    }
+
     // --- Parser GEDCOM ---
     function parseGedcom(text) {
         const lines = text.split('\n');
         let currentEntity = null;
         let currentType = null; 
         let currentContext = null; 
-        let currentEventBlock = null; // Pour stocker les notes liées aux événements
+        let currentEventBlock = null; 
 
         gedcomData.individuals = {};
         gedcomData.families = {};
@@ -247,7 +331,6 @@
                     else if (tag === 'OBJE') currentContext = 'OBJE'; 
                     else if (tag === 'FAMC') person.famc = value; 
                     else if (tag === 'FAMS') person.fams.push(value); 
-                    // Distinctions et événements (Pour capturer les notes)
                     else if (tag === 'TITL' || tag === 'EVEN') {
                         currentContext = 'EVENT';
                         currentEventBlock = { tag: tag, value: value.trim(), type: '', note: '' };
@@ -270,7 +353,6 @@
                     }
                 }
                 else if (level === 3 && currentContext === 'EVENT' && currentEventBlock) {
-                    // Gestion basique des notes sur plusieurs lignes
                     if (tag === 'CONT') currentEventBlock.note += '<br>' + value.trim();
                     else if (tag === 'CONC') currentEventBlock.note += value.trim();
                 }
@@ -304,22 +386,7 @@
         }
     }
 
-    // --- Initialisation ---
-    document.addEventListener("DOMContentLoaded", () => {
-        setupPanZoom();
-        fetch('arbre.ged')
-            .then(response => { if (!response.ok) throw new Error(); return response.text(); })
-            .then(text => {
-                parseGedcom(text);
-                document.getElementById('loading-msg').style.display = 'none';
-                document.getElementById('search-container').style.display = 'block';
-                document.getElementById('search-input').focus();
-            })
-            .catch(() => {
-                document.getElementById('loading-msg').innerHTML = `<span style="color: #e74c3c;">❌ Erreur: Impossible de charger "arbre.ged".</span>`;
-            });
-    });
-
+    // --- Recherche ---
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
 
@@ -387,7 +454,7 @@
         return '#bdc3c7'; // Gris par défaut
     }
 
-    // --- Helpers de Navigation Généalogique ---
+    // --- Helpers de Navigation ---
     function selectPerson(id) {
         if (!gedcomData.individuals[id]) return;
         currentPersonId = id;
@@ -575,7 +642,6 @@
         treeData.links.forEach(link => {
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             
-            // Lignes de Fratrie (Crochets)
             if (link.type === 'g1-to-g0') {
                 const fNode = treeData.nodes.find(n => n.id === link.father);
                 const mNode = treeData.nodes.find(n => n.id === link.mother);
@@ -629,7 +695,6 @@
                     let endY = toNode.y - toSize.h/2;
                     const midY = (startY + endY) / 2; 
                     
-                    // Lignes Orthogonales strictes pour tous les descendants standards
                     path.setAttribute("d", `M ${fromNode.x} ${startY} L ${fromNode.x} ${midY} L ${toNode.x} ${midY} L ${toNode.x} ${endY}`);
                     path.setAttribute("class", "branch");
                 }
@@ -707,7 +772,6 @@
                 dt.setAttribute("class", "node-dates-g4");
                 dt.setAttribute("x", 0); dt.setAttribute("y", 39);
                 
-                // G4 : Seulement l'année, sans ABT
                 let yB = p.birth ? formatTreeDate(p.birth).match(/\d{4}/) : null;
                 let yD = p.death ? formatTreeDate(p.death).match(/\d{4}/) : null;
                 yB = yB ? yB[0] : null;
@@ -722,7 +786,6 @@
                 g.appendChild(dt);
 
             } else {
-                // Photo alignée à gauche (Standard G-1 à G3)
                 const imgRadius = 25;
                 const imgSize = imgRadius * 2;
                 const imgX = -size.w/2 + 10;
@@ -743,21 +806,18 @@
 
                 const textX = imgX + imgSize + 10 + (size.w - imgSize - 30)/2; 
                 
-                // Prénom sur Ligne 1
                 const fnameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 fnameT.setAttribute("class", "node-name-first");
                 fnameT.setAttribute("x", textX); fnameT.setAttribute("y", -12);
                 fnameT.textContent = truncate(p.firstName, 22);
                 g.appendChild(fnameT);
 
-                // NOM sur Ligne 2 (Majuscules)
                 const lnameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 lnameT.setAttribute("class", "node-name-last");
                 lnameT.setAttribute("x", textX); lnameT.setAttribute("y", 4);
                 lnameT.textContent = truncate(p.lastName, 22).toUpperCase();
                 g.appendChild(lnameT);
 
-                // Dates sur Ligne 3
                 const datesT = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 datesT.setAttribute("class", "node-dates");
                 datesT.setAttribute("x", textX); datesT.setAttribute("y", 20);
@@ -847,7 +907,7 @@
                  break;
             }
         }
-        svgState.scale = 0.8; // Applique le dézoom à 80% lors du centrage
+        svgState.scale = 0.8; 
         svgState.translate.x = svg.getBoundingClientRect().width / 2 - targetX * svgState.scale;
         svgState.translate.y = svg.getBoundingClientRect().height / 2 - targetY * svgState.scale;
         svg.updateTransform();
@@ -867,7 +927,6 @@
         const p = getPerson(id);
         const container = document.getElementById('details-content');
         
-        // Block Informations Principales
         let html = `
             <img src="${getPhotoUrl(p)}" class="details-photo-big" style="border-color: ${getBorderColor(p.sex)}" alt="Photo">
             <div class="details-info-hash">
@@ -882,7 +941,6 @@
             <div class="details-info-hash" style="grid-column: span 2;">
         `;
 
-        // Block Famille
         const parents = getParents(id);
         html += `<div class="label">Père</div><div>${parents[0] ? `<span class="clickable-link" onclick="selectPerson('${parents[0].id}')">${parents[0].name}</span>` : 'Inconnu'}</div>`;
         html += `<div class="label">Mère</div><div>${parents[1] ? `<span class="clickable-link" onclick="selectPerson('${parents[1].id}')">${parents[1].name}</span>` : 'Inconnue'}</div>`;
@@ -918,7 +976,6 @@
         }
         html += `</div>`;
         
-        // Extraction Distinctions et Militaire avec notes associées
         let milList = [];
         if (p.events) {
             p.events.forEach(ev => {

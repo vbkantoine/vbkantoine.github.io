@@ -11,3 +11,4 @@ latex/*.pdf
 *.gz
 *.bbl
 *.blg
+genea/info.txt
