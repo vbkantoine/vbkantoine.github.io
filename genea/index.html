@@ -25,7 +25,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            touch-action: none; /* Empêche le comportement tactile par défaut sur le body */
+            touch-action: none;
         }
 
         header {
@@ -224,11 +224,12 @@
     let currentPersonId = null;
     let svgState = { grabbing: false, point: { x: 0, y: 0 }, translate: { x: 0, y: 0 }, scale: 0.8 };
 
-    // --- Moteur de Déchiffrement AES-GCM et Session ---
+    // --- Moteur de Déchiffrement AES-GCM et Stockage Local (Persistant) ---
     document.addEventListener("DOMContentLoaded", () => {
         setupPanZoom();
         
-        const savedPwd = sessionStorage.getItem('gedcom_pwd');
+        // Utilise localStorage au lieu de sessionStorage pour la persistance
+        const savedPwd = localStorage.getItem('gedcom_pwd');
         if (savedPwd) {
             document.getElementById('decrypt-password').value = savedPwd;
             loadAndDecrypt();
@@ -286,7 +287,8 @@
             
             parseGedcom(gedcomText);
 
-            sessionStorage.setItem('gedcom_pwd', pwd);
+            // Succès : on enregistre en mémoire locale (persistant)
+            localStorage.setItem('gedcom_pwd', pwd);
             
             document.getElementById('password-form').style.display = 'none';
             msgDiv.style.display = 'none';
@@ -297,12 +299,12 @@
         } catch (error) {
             console.error(error);
             msgDiv.innerHTML = "<span style='color: #e74c3c;'>❌ Mot de passe incorrect ou fichier invalide.</span>";
-            sessionStorage.removeItem('gedcom_pwd'); 
+            localStorage.removeItem('gedcom_pwd'); 
         }
     }
 
     function logout() {
-        sessionStorage.removeItem('gedcom_pwd');
+        localStorage.removeItem('gedcom_pwd');
         location.reload(); 
     }
 
@@ -464,14 +466,27 @@
         return str.length > len ? str.substring(0, len-3) + '...' : str;
     }
 
+    // Formatage des dates pour l'arbre (Traduit ABT et BET/AND, et gère les minuscules)
     function formatTreeDate(dateStr) {
         if (!dateStr) return '';
+        let upperDate = dateStr.toUpperCase();
+        
+        // Gestion de "BET ... AND ..." (Prend la 1ère année trouvée)
+        if (upperDate.includes('BET') && upperDate.includes('AND')) {
+            const match = upperDate.match(/\d{4}/);
+            return match ? `~${match[0]}` : '';
+        }
+        
+        // Gestion normale / ABT
         return dateStr.replace(/ABT\s+/ig, '').replace(/[A-Z]{3}/g, m => m.toLowerCase());
     }
 
+    // Formatage des dates pour la fiche (Traduit ABT et BET/AND explicitement)
     function formatDetailsDate(dateStr) {
         if (!dateStr) return '';
-        return dateStr.replace(/ABT\s+/ig, 'approximativement ').replace(/[A-Z]{3}/g, m => m.toLowerCase());
+        let formatted = dateStr.replace(/ABT\s+/ig, 'approximativement ');
+        formatted = formatted.replace(/BET\s+(.*?)\s+AND\s+(.*)/ig, 'entre $1 et $2');
+        return formatted.replace(/[A-Z]{3}/g, m => m.toLowerCase());
     }
 
     function formatDateLine(birth, death) {
@@ -674,6 +689,7 @@
         treeData.links.forEach(link => {
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             
+            // Lignes de Fratrie (Crochets)
             if (link.type === 'g1-to-g0') {
                 const fNode = treeData.nodes.find(n => n.id === link.father);
                 const mNode = treeData.nodes.find(n => n.id === link.mother);
@@ -804,8 +820,9 @@
                 dt.setAttribute("class", "node-dates-g4");
                 dt.setAttribute("x", 0); dt.setAttribute("y", 39);
                 
-                let yB = p.birth ? formatTreeDate(p.birth).match(/\d{4}/) : null;
-                let yD = p.death ? formatTreeDate(p.death).match(/\d{4}/) : null;
+                // Préserver le "~" lors de l'extraction de l'année pour G4
+                let yB = p.birth ? formatTreeDate(p.birth).match(/(~?\d{4})/) : null;
+                let yD = p.death ? formatTreeDate(p.death).match(/(~?\d{4})/) : null;
                 yB = yB ? yB[0] : null;
                 yD = yD ? yD[0] : null;
 
@@ -873,7 +890,6 @@
             viewport.setAttribute("transform", `translate(${svgState.translate.x}, ${svgState.translate.y}) scale(${svgState.scale})`);
         }
 
-        // Helpers Tactiles
         function getPinchDistance(touches) {
             const dx = touches[0].clientX - touches[1].clientX;
             const dy = touches[0].clientY - touches[1].clientY;
@@ -887,7 +903,6 @@
             };
         }
 
-        // --- GESTION TACTILE (SMARTPHONES/TABLETTES) ---
         svg.addEventListener('touchstart', (e) => {
             if (e.target.closest('.node')) return; 
             
@@ -903,7 +918,7 @@
 
         svg.addEventListener('touchmove', (e) => {
             if (e.target.closest('.node')) return;
-            e.preventDefault(); // Empêche le scroll de la page
+            e.preventDefault(); 
 
             if (e.touches.length === 1 && svgState.grabbing) {
                 const dx = e.touches[0].clientX - svgState.point.x;
@@ -947,8 +962,6 @@
             initialPinchDistance = null;
         });
 
-
-        // --- GESTION SOURIS (PC) ---
         svg.addEventListener('mousedown', (e) => {
             if (e.target.closest('.node')) return; 
             svgState.grabbing = true;
