@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chiffreur de GEDCOM (AES-GCM)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f6fa; color: #2c3e50; display: flex; flex-direction: column; align-items: center; padding: 40px; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h1 { font-size: 1.5rem; text-align: center; color: #3498db; }
+        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+        input[type="file"], input[type="password"] { padding: 10px; border: 1px solid #dcdde1; border-radius: 4px; font-size: 16px; }
+        button { background-color: #27ae60; color: white; border: none; padding: 12px; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #2196f3; }
+        #status { margin-top: 20px; font-weight: bold; text-align: center; }
+        .warning { background: #fff3cd; color: #856404; padding: 10px; border-left: 4px solid #ffeeba; margin-bottom: 20px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Verrouillage GEDCOM</h1>
+    
+    <div class="warning">
+        <strong>Attention :</strong> L'algorithme utilisé (AES-256) est de niveau militaire. Si vous oubliez ce mot de passe, il n'existe aucune "porte dérobée" pour récupérer votre fichier chiffré.
+    </div>
+
+    <div class="form-group">
+        <label for="fileInput">1. Sélectionnez "arbre.ged" :</label>
+        <input type="file" id="fileInput" accept=".ged">
+    </div>
+
+    <div class="form-group">
+        <label for="password">2. Choisissez un mot de passe fort :</label>
+        <input type="password" id="password" placeholder="Mot de passe secret...">
+    </div>
+
+    <button onclick="encryptFile()">Chiffrer et Télécharger</button>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    async function encryptFile() {
+        const fileInput = document.getElementById('fileInput');
+        const passwordInput = document.getElementById('password').value;
+        const statusDiv = document.getElementById('status');
+
+        if (!fileInput.files.length) {
+            statusDiv.innerHTML = "<span style='color:red;'>Veuillez sélectionner un fichier.</span>";
+            return;
+        }
+        if (!passwordInput) {
+            statusDiv.innerHTML = "<span style='color:red;'>Veuillez entrer un mot de passe.</span>";
+            return;
+        }
+
+        statusDiv.innerHTML = "⏳ Chiffrement en cours...";
+
+        try {
+            const file = fileInput.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+
+            // 1. Préparation de la cryptographie
+            const encoder = new TextEncoder();
+            const passwordBytes = encoder.encode(passwordInput);
+
+            // Création d'un "sel" aléatoire (empêche les attaques par dictionnaire pré-calculé)
+            const salt = window.crypto.getRandomValues(new Uint8Array(16));
+            
+            // Création d'un vecteur d'initialisation (IV) aléatoire requis pour AES-GCM
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+            // 2. Dérivation de la clé (PBKDF2) à partir du mot de passe
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw",
+                passwordBytes,
+                { name: "PBKDF2" },
+                false,
+                ["deriveKey"]
+            );
+
+            const key = await window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000, // Sécurité élevée
+                    hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt"]
+            );
+
+            // 3. Chiffrement du fichier
+            const encryptedContent = await window.crypto.subtle.encrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv
+                },
+                key,
+                arrayBuffer
+            );
+
+            // 4. Assemblage du fichier final (Sel + IV + Données chiffrées)
+            const encryptedBytes = new Uint8Array(encryptedContent);
+            const finalBlob = new Blob([salt, iv, encryptedBytes], { type: "application/octet-stream" });
+
+            // 5. Déclenchement du téléchargement
+            const downloadUrl = URL.createObjectURL(finalBlob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = "arbre.enc"; // Nouveau nom de fichier sécurisé
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+
+            statusDiv.innerHTML = "<span style='color:green;'>✅ Fichier chiffré téléchargé sous le nom 'arbre.enc' !</span>";
+
+        } catch (error) {
+            console.error(error);
+            statusDiv.innerHTML = "<span style='color:red;'>❌ Erreur lors du chiffrement.</span>";
+        }
+    }
+</script>
+
+</body>
+</html>
