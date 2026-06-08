@@ -104,7 +104,8 @@
         .node-name-g4-last { font-size: 11px; font-weight: bold; fill: var(--secondary); text-anchor: middle; text-transform: uppercase; }
         .node-dates-g4 { font-size: 10px; fill: #7f8c8d; text-anchor: middle; }
 
-        .photo-circle-border { fill: none; stroke-width: 3px; }
+        /* Bordure de photo amincie */
+        .photo-circle-border { fill: none; stroke-width: 1.5px; }
 
         .zoom-controls {
             position: absolute; bottom: 20px; right: 20px;
@@ -171,7 +172,7 @@
 <script>
     // --- Configuration Visuelle ---
     const CONFIG = {
-        stdWidth: 220,    
+        stdWidth: 240,    // Cases élargies à 240px
         stdHeight: 75,
         g4Width: 105,     
         g4Height: 100,    
@@ -316,21 +317,32 @@
         return str.length > len ? str.substring(0, len-2) + '..' : str;
     }
 
+    // Formatage Spécial : Date (mois minuscules et pas de '?' si manque)
+    function formatDateLine(birth, death) {
+        let b = birth ? birth.replace(/[A-Z]{3}/g, m => m.toLowerCase()) : '';
+        let d = death ? death.replace(/[A-Z]{3}/g, m => m.toLowerCase()) : '';
+        
+        if (b && d) return `${b} - ${d}`;
+        if (b) return b;
+        if (d) return `- ${d}`;
+        return '';
+    }
+
     // Formatage Spécial : Prénom + NOM (Coupe intelligente)
     function formatNameStd(firstName, lastName) {
         const LAST = (lastName || '').toUpperCase();
         const first = firstName || '';
-        const maxLen = 27; // Limite de caractères par rapport à la case
+        const maxLen = 30; // Limite pour case de 240px
         
         let full = `${first} ${LAST}`.trim();
         if (full.length <= maxLen) return full;
         
-        // 1. Coupe du prénom : Ne garde que le 1er mot
+        // Coupe du prénom : Ne garde que le 1er mot
         let firstFirst = first.split(' ')[0];
-        let shortened = `${firstFirst}... ${LAST}`.trim();
-        if (shortened.length <= maxLen) return shortened;
+        let attempt1 = `${firstFirst}... ${LAST}`.trim();
+        if (attempt1.length <= maxLen) return attempt1;
         
-        // 2. Si toujours trop long, coupe du NOM
+        // Si toujours trop long, coupe du NOM
         let allowedLast = maxLen - firstFirst.length - 7;
         if (allowedLast < 2) allowedLast = 2; // Sécurité
         return `${firstFirst}... ${LAST.substring(0, allowedLast)}...`;
@@ -382,8 +394,9 @@
     function buildTreeStructure(rootId) {
         const nodes = []; 
         const links = []; 
+        const pRoot = getPerson(rootId);
 
-        // 1. Algorithme de construction et d'encombrement (Bottom-Up)
+        // 1. Algorithme de construction (Bottom-Up)
         function createTree(personId, gen) {
             if (!personId || gen > 4) return null;
             const p = getPerson(personId);
@@ -397,7 +410,6 @@
                 node.mother = createTree(parents[1]?.id, gen + 1);
             }
             
-            // Calcul de la largeur nécessaire à cette branche
             const baseWidth = (gen === 4 ? CONFIG.g4Width : CONFIG.stdWidth) + CONFIG.gapX;
             let childrenWidth = 0;
             if (node.father) childrenWidth += node.father.width;
@@ -418,39 +430,74 @@
                 setPositions(node.father, startX + node.father.width / 2);
                 setPositions(node.mother, startX + node.father.width + node.mother.width / 2);
             } else if (node.father) {
-                setPositions(node.father, currentX); // S'aligne parfaitement s'il manque un parent
+                setPositions(node.father, currentX); 
             } else if (node.mother) {
                 setPositions(node.mother, currentX);
             }
         }
 
-        // 3. Aplatir l'arbre pour le rendu SVG
+        // 3. Aplatir l'arbre Ascendant
         function flattenAscendants(node) {
             if (!node) return;
             nodes.push({ id: node.id, person: node.person, x: node.x, y: CONFIG.genCoords[node.gen], gen: node.gen, role: node.gen === 0 ? 'center' : 'ascendant' });
             
             if (node.father) {
-                links.push({ from: node.father.id, to: node.id, type: 'parent' });
+                if (node.gen > 0) links.push({ from: node.father.id, to: node.id, type: 'parent' });
                 flattenAscendants(node.father);
             }
             if (node.mother) {
-                links.push({ from: node.mother.id, to: node.id, type: 'parent' });
+                if (node.gen > 0) links.push({ from: node.mother.id, to: node.id, type: 'parent' });
                 flattenAscendants(node.mother);
             }
         }
 
-        // Exécution pour les Ascendants
         const rootTree = createTree(rootId, 0);
         if(rootTree) {
             setPositions(rootTree, 0);
             flattenAscendants(rootTree);
         }
 
-        // 4. Ajouter les Conjoints (à droite du sujet central)
+        // 4. Frères et Soeurs (à gauche) + Ajout de la liaison G1 -> G0
+        const siblings = [];
+        if (pRoot && pRoot.famc) {
+            const fam = gedcomData.families[pRoot.famc];
+            if (fam && fam.chil) {
+                fam.chil.forEach(cId => {
+                    if (cId !== rootId && getPerson(cId)) siblings.push(getPerson(cId));
+                });
+            }
+        }
+
+        const g0ChildIds = [rootId];
+        let siblingX = - (CONFIG.stdWidth + CONFIG.gapX);
+        siblings.forEach(sib => {
+            nodes.push({ id: sib.id, person: sib, x: siblingX, y: CONFIG.genCoords['0'], gen: 0, role: 'sibling' });
+            g0ChildIds.push(sib.id);
+            siblingX -= (CONFIG.stdWidth + CONFIG.gapX);
+        });
+
+        // Décaler les ascendants pour rester parfaitement centré sur la fratrie
+        if (siblings.length > 0) {
+            let shiftX = - (siblings.length * (CONFIG.stdWidth + CONFIG.gapX)) / 2;
+            nodes.forEach(n => {
+                if (n.gen > 0) n.x += shiftX;
+            });
+        }
+
+        // Lien orthgonal (Crochet) G1 -> G0 pour la fratrie
+        const parents = getParents(rootId);
+        if (parents[0] || parents[1]) {
+            links.push({
+                type: 'g1-to-g0',
+                father: parents[0]?.id,
+                mother: parents[1]?.id,
+                children: g0ChildIds
+            });
+        }
+
+        // 5. Ajouter les Conjoints (à droite du sujet central)
         let spouseX = CONFIG.stdWidth + CONFIG.gapX; 
         let prevSpouseId = rootId; 
-        const pRoot = getPerson(rootId);
-
         if (pRoot && pRoot.fams) {
             pRoot.fams.forEach(famId => {
                 const fam = gedcomData.families[famId];
@@ -470,7 +517,7 @@
             });
         }
 
-        // 5. Ajouter les Enfants (G-1)
+        // 6. Ajouter les Enfants (G-1)
         const children = getChildren(rootId);
         if (children.length > 0) {
             const stdSpan = CONFIG.stdWidth + CONFIG.gapX;
@@ -501,26 +548,65 @@
 
         // --- Dessin des Liens ---
         treeData.links.forEach(link => {
-            const fromNode = treeData.nodes.find(n => n.id === link.from);
-            const toNode = treeData.nodes.find(n => n.id === link.to);
-            if (!fromNode || !toNode) return;
-
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             
-            if (link.type === 'spouse') {
-                const startX = fromNode.x + CONFIG.stdWidth/2;
-                const endX = toNode.x - CONFIG.stdWidth/2;
-                path.setAttribute("d", `M ${startX} ${fromNode.y} L ${endX} ${toNode.y}`);
-                path.setAttribute("class", "branch spouse-branch");
-            } else {
-                const fromSize = getNodeSize(fromNode.gen);
-                const toSize = getNodeSize(toNode.gen);
-                let startY = fromNode.y + fromSize.h/2;
-                let endY = toNode.y - toSize.h/2;
-                
-                const cpY = (startY + endY) / 2; 
-                path.setAttribute("d", `M ${fromNode.x} ${startY} C ${fromNode.x} ${cpY}, ${toNode.x} ${cpY}, ${toNode.x} ${endY}`);
+            if (link.type === 'g1-to-g0') {
+                const fNode = treeData.nodes.find(n => n.id === link.father);
+                const mNode = treeData.nodes.find(n => n.id === link.mother);
+                const childNodes = link.children.map(cid => treeData.nodes.find(n => n.id === cid)).filter(Boolean);
+
+                const startY = CONFIG.genCoords['1'] + CONFIG.stdHeight / 2;
+                const endY = CONFIG.genCoords['0'] - CONFIG.stdHeight / 2;
+                const midY = (startY + endY) / 2;
+
+                let d = "";
+                let parentCenterX = null;
+
+                if (fNode && mNode) {
+                    parentCenterX = (fNode.x + mNode.x) / 2;
+                    d += `M ${fNode.x} ${startY} L ${fNode.x} ${midY - 15} `;
+                    d += `L ${mNode.x} ${midY - 15} L ${mNode.x} ${startY} `;
+                    d += `M ${parentCenterX} ${midY - 15} L ${parentCenterX} ${midY} `;
+                } else if (fNode) {
+                    parentCenterX = fNode.x;
+                    d += `M ${fNode.x} ${startY} L ${fNode.x} ${midY} `;
+                } else if (mNode) {
+                    parentCenterX = mNode.x;
+                    d += `M ${mNode.x} ${startY} L ${mNode.x} ${midY} `;
+                }
+
+                if (parentCenterX !== null && childNodes.length > 0) {
+                    let minX = Math.min(...childNodes.map(c => c.x), parentCenterX);
+                    let maxX = Math.max(...childNodes.map(c => c.x), parentCenterX);
+                    d += `M ${minX} ${midY} L ${maxX} ${midY} `;
+                    
+                    childNodes.forEach(child => {
+                        d += `M ${child.x} ${midY} L ${child.x} ${endY} `;
+                    });
+                }
+                path.setAttribute("d", d);
                 path.setAttribute("class", "branch");
+
+            } else {
+                const fromNode = treeData.nodes.find(n => n.id === link.from);
+                const toNode = treeData.nodes.find(n => n.id === link.to);
+                if (!fromNode || !toNode) return;
+
+                if (link.type === 'spouse') {
+                    const startX = fromNode.x + CONFIG.stdWidth/2;
+                    const endX = toNode.x - CONFIG.stdWidth/2;
+                    path.setAttribute("d", `M ${startX} ${fromNode.y} L ${endX} ${toNode.y}`);
+                    path.setAttribute("class", "branch spouse-branch");
+                } else {
+                    const fromSize = getNodeSize(fromNode.gen);
+                    const toSize = getNodeSize(toNode.gen);
+                    let startY = fromNode.y + fromSize.h/2;
+                    let endY = toNode.y - toSize.h/2;
+                    
+                    const cpY = (startY + endY) / 2; 
+                    path.setAttribute("d", `M ${fromNode.x} ${startY} C ${fromNode.x} ${cpY}, ${toNode.x} ${cpY}, ${toNode.x} ${endY}`);
+                    path.setAttribute("class", "branch");
+                }
             }
             linksGroup.appendChild(path);
         });
@@ -598,12 +684,19 @@
                 const dt = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 dt.setAttribute("class", "node-dates-g4");
                 dt.setAttribute("x", 0); dt.setAttribute("y", 39);
-                const yB = extractYear(p.birth); const yD = extractYear(p.death);
-                dt.textContent = (yB || yD) ? `${yB} - ${yD}` : '?';
+                
+                let yB = extractYear(p.birth);
+                let yD = extractYear(p.death);
+                let textG4 = '';
+                if (yB && yD) textG4 = `${yB} - ${yD}`;
+                else if (yB) textG4 = yB;
+                else if (yD) textG4 = `- ${yD}`;
+                
+                dt.textContent = textG4;
                 g.appendChild(dt);
 
             } else {
-                // Photo alignée à gauche (Standard G0 à G3)
+                // Photo alignée à gauche (Standard G-1 à G3)
                 const imgRadius = 25;
                 const imgSize = imgRadius * 2;
                 const imgX = -size.w/2 + 10;
@@ -627,14 +720,13 @@
                 const nameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 nameT.setAttribute("class", "node-name");
                 nameT.setAttribute("x", textX); nameT.setAttribute("y", -5);
-                // Utilisation de la nouvelle fonction de formatage complet
                 nameT.textContent = formatNameStd(p.firstName, p.lastName);
                 g.appendChild(nameT);
 
                 const datesT = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 datesT.setAttribute("class", "node-dates");
                 datesT.setAttribute("x", textX); datesT.setAttribute("y", 15);
-                datesT.textContent = `${p.birth || '?'} - ${p.death || '?'}`;
+                datesT.textContent = formatDateLine(p.birth, p.death);
                 g.appendChild(datesT);
             }
 
