@@ -9,7 +9,7 @@
             --primary: #2c3e50;
             --secondary: #34495e;
             --accent: #3498db;
-            --union: #e67e22; /* Couleur pour les conjoints */
+            --union: #e67e22; 
             --bg: #f5f6fa;
             --card-bg: #ffffff;
             --border: #dcdde1;
@@ -84,25 +84,27 @@
         .view-section.active { display: block; }
 
         /* --- STYLES SVG (ARBRE) --- */
-        #tree-svg {
-            width: 100%;
-            height: 100%;
-            background-color: #e0e4e8;
-            cursor: grab;
-        }
+        #tree-svg { width: 100%; height: 100%; background-color: #e0e4e8; cursor: grab; }
         #tree-svg.grabbing { cursor: grabbing; }
 
         .branch { stroke: #95a5a6; stroke-width: 2px; fill: none; }
-        .branch.spouse-branch { stroke: var(--union); stroke-dasharray: 6,4; } /* Ligne pointillée pour les unions */
+        .branch.spouse-branch { stroke: var(--union); stroke-dasharray: 6,4; }
         
         .node { cursor: pointer; }
         .node rect { fill: var(--card-bg); stroke: var(--border); stroke-width: 1px; rx: 5; ry: 5; transition: stroke 0.2s; }
         .node:hover rect { stroke: var(--accent); stroke-width: 2px; }
         .node.selected rect { stroke: #27ae60; stroke-width: 3px; fill: #eafaf1; }
-        .node.spouse-node rect { stroke: var(--union); } /* Bordure orange pour les conjoints */
+        .node.spouse-node rect { stroke: var(--union); } 
         
+        /* Textes Standard (G0 à G3) */
         .node-name { font-size: 13px; font-weight: bold; fill: var(--primary); text-anchor: middle; }
         .node-dates { font-size: 11px; fill: #7f8c8d; text-anchor: middle; }
+        
+        /* Textes Compacts (G4) */
+        .node-name-g4 { font-size: 11px; font-weight: bold; fill: var(--primary); text-anchor: middle; }
+        .node-name-g4-last { font-size: 11px; font-weight: bold; fill: var(--secondary); text-anchor: middle; text-transform: uppercase; }
+        .node-dates-g4 { font-size: 10px; fill: #7f8c8d; text-anchor: middle; }
+
         .photo-circle-border { fill: none; stroke: #ccc; stroke-width: 1px; }
 
         .zoom-controls {
@@ -168,15 +170,19 @@
 </div>
 
 <script>
-    // --- Configuration Visuelle ---
-    // Nœuds élargis à 240px pour éviter que le texte ne dépasse
+    // --- Configuration Visuelle de la Grille ---
     const CONFIG = {
-        node: { width: 240, height: 75, photoSize: 50, gapX: 40, gapY: 120 },
+        stdWidth: 220,    // Largeur standard (G-1 à G3)
+        stdHeight: 75,
+        g4Width: 105,     // Largeur compacte (G4) - Deux G4 (105x2) + Gap (10) = 220
+        g4Height: 100,    // Plus long verticalement
+        gapX: 10,         // Ecart de 10px entre tous les nœuds
         genCoords: {
-            '3': -360, // Arrière-grands-parents
+            '4': -480, // Arr-Arr-Grands-parents
+            '3': -360, // Arr-Grands-parents
             '2': -240, // Grands-parents
             '1': -120, // Parents
-            '0': 0,    // Personne ciblée + Conjoints
+            '0': 0,    // Centre / Conjoints
             '-1': 150  // Enfants
         }
     };
@@ -211,7 +217,7 @@
                 if (tag === 'INDI') {
                     currentType = 'INDI';
                     currentEntity = id;
-                    gedcomData.individuals[id] = { id, name: "Inconnu", birth: "", death: "", sex: null, photo: null, famc: null, fams: [] };
+                    gedcomData.individuals[id] = { id, name: "Inconnu", firstName: "", lastName: "", birth: "", death: "", sex: null, photo: null, famc: null, fams: [] };
                 } else if (tag === 'FAM') {
                     currentType = 'FAM';
                     currentEntity = id;
@@ -221,7 +227,15 @@
                 const person = gedcomData.individuals[currentEntity];
                 if (level === 1) {
                     currentContext = null; 
-                    if (tag === 'NAME') person.name = value.replace(/\//g, '');
+                    if (tag === 'NAME') {
+                        let nameRaw = value;
+                        let fname = nameRaw.replace(/\/[^\/]*\//, '').trim(); 
+                        let lnameMatch = nameRaw.match(/\/(.*?)\//);
+                        
+                        person.name = nameRaw.replace(/\//g, '').trim();
+                        person.firstName = fname || person.name;
+                        person.lastName = lnameMatch ? lnameMatch[1].trim() : '';
+                    }
                     else if (tag === 'SEX') person.sex = value.trim();
                     else if (tag === 'BIRT') currentContext = 'BIRT';
                     else if (tag === 'DEAT') currentContext = 'DEAT';
@@ -298,7 +312,18 @@
         return 'general-homme.jpg'; 
     }
 
-    // --- Rendu de l'Arbre SVG ---
+    function extractYear(dateStr) {
+        if(!dateStr) return '';
+        const match = dateStr.match(/\d{4}/);
+        return match ? match[0] : '';
+    }
+
+    function truncate(str, len) {
+        if(!str) return '';
+        return str.length > len ? str.substring(0, len-2) + '..' : str;
+    }
+
+    // --- Helpers de Navigation Arbre ---
     function selectPerson(id) {
         if (!gedcomData.individuals[id]) return;
         currentPersonId = id;
@@ -309,9 +334,7 @@
         renderInteractiveTree(id);
         renderDetails(id);
         
-        if(document.getElementById('tree-view').classList.contains('active')) {
-             centerOnNode(id);
-        }
+        if(document.getElementById('tree-view').classList.contains('active')) centerOnNode(id);
     }
 
     const getPerson = (id) => gedcomData.individuals[id];
@@ -335,97 +358,86 @@
         return children;
     }
 
-    // Algorithme de placement sur Grille stricte pour éviter tout chevauchement
+    // --- Moteur de Grille Dynamique et Récursif ---
     function buildTreeStructure(rootId) {
         const nodes = []; 
         const links = []; 
-        const span = CONFIG.node.width + CONFIG.node.gapX; // Espace alloué par noeud horizontalement
+        const stdSpan = CONFIG.stdWidth + CONFIG.gapX; // 230px d'emprise totale par case standard
 
-        // G0: Centre
-        nodes.push({ id: rootId, person: getPerson(rootId), x: 0, y: CONFIG.genCoords['0'], gen: 0, role: 'center' });
+        // 1. Ajouter le Sujet Central (G0)
+        const pRoot = getPerson(rootId);
+        nodes.push({ id: rootId, person: pRoot, x: 0, y: CONFIG.genCoords['0'], gen: 0, role: 'center' });
 
-        // SPOUSES (G0) - placés à droite du sujet principal
-        const p = getPerson(rootId);
-        let spouseX = span; 
-        let prevSpouseId = rootId; // Pour chaîner la ligne d'union
-
-        if (p && p.fams) {
-            p.fams.forEach(famId => {
+        // 2. Ajouter les Conjoints (sur la droite)
+        let spouseX = stdSpan; 
+        let prevSpouseId = rootId; 
+        if (pRoot && pRoot.fams) {
+            pRoot.fams.forEach(famId => {
                 const fam = gedcomData.families[famId];
                 if (fam) {
                     const spouseId = fam.husb === rootId ? fam.wife : fam.husb;
                     if (spouseId) {
                         const spouse = getPerson(spouseId);
                         if (spouse) {
-                            const uniqueSpouseId = spouse.id + '_sp'; // ID unique pour SVG
+                            const uniqueSpouseId = spouse.id + '_sp'; 
                             nodes.push({ id: uniqueSpouseId, person: spouse, x: spouseX, y: CONFIG.genCoords['0'], gen: 0, role: 'spouse' });
                             links.push({ from: prevSpouseId, to: uniqueSpouseId, type: 'spouse' });
                             prevSpouseId = uniqueSpouseId;
-                            spouseX += span;
+                            spouseX += stdSpan;
                         }
                     }
                 }
             });
         }
 
-        const parents = getParents(rootId);
-        
-        // G1: Parents
-        if (parents[0]) {
-            nodes.push({ id: parents[0].id, person: parents[0], x: -2 * span, y: CONFIG.genCoords['1'], gen: 1 });
-            links.push({ from: parents[0].id, to: rootId, type: 'parent' });
-        }
-        if (parents[1]) {
-            nodes.push({ id: parents[1].id, person: parents[1], x: 2 * span, y: CONFIG.genCoords['1'], gen: 1 });
-            links.push({ from: parents[1].id, to: rootId, type: 'parent' });
-        }
-
-        // G2: Grands-parents
-        if (parents[0]) {
-            const gp = getParents(parents[0].id);
-            if (gp[0]) { nodes.push({ id: gp[0].id, person: gp[0], x: -3 * span, y: CONFIG.genCoords['2'], gen: 2 }); links.push({ from: gp[0].id, to: parents[0].id, type: 'parent' }); }
-            if (gp[1]) { nodes.push({ id: gp[1].id, person: gp[1], x: -1 * span, y: CONFIG.genCoords['2'], gen: 2 }); links.push({ from: gp[1].id, to: parents[0].id, type: 'parent' }); }
-        }
-        if (parents[1]) {
-            const gp = getParents(parents[1].id);
-            if (gp[0]) { nodes.push({ id: gp[0].id, person: gp[0], x: 1 * span, y: CONFIG.genCoords['2'], gen: 2 }); links.push({ from: gp[0].id, to: parents[1].id, type: 'parent' }); }
-            if (gp[1]) { nodes.push({ id: gp[1].id, person: gp[1], x: 3 * span, y: CONFIG.genCoords['2'], gen: 2 }); links.push({ from: gp[1].id, to: parents[1].id, type: 'parent' }); }
-        }
-
-        // G3: Arrière-grands-parents
-        const addG3 = (childId, parentIndex, xOffset) => {
-            if(!childId) return;
-            const gp = getParents(childId)[parentIndex];
-            if (gp) {
-                nodes.push({ id: gp.id, person: gp, x: xOffset, y: CONFIG.genCoords['3'], gen: 3 });
-                links.push({ from: gp.id, to: childId, type: 'parent' });
+        // 3. Fonction récursive pour remonter l'ascendance (Jusqu'à G4)
+        function buildAscendants(personId, xCenter, gen) {
+            if (gen > 4 || !personId) return;
+            
+            if (gen > 0) { // On l'ajoute (sauf G0 déjà fait)
+                const p = getPerson(personId);
+                if (p) nodes.push({ id: p.id, person: p, x: xCenter, y: CONFIG.genCoords[gen], gen: gen });
             }
-        };
 
-        if (parents[0]) {
-            const gp = getParents(parents[0].id);
-            addG3(gp[0]?.id, 0, -3.5 * span); addG3(gp[0]?.id, 1, -2.5 * span);
-            addG3(gp[1]?.id, 0, -1.5 * span); addG3(gp[1]?.id, 1, -0.5 * span);
-        }
-        if (parents[1]) {
-            const gp = getParents(parents[1].id);
-            addG3(gp[0]?.id, 0, 0.5 * span); addG3(gp[0]?.id, 1, 1.5 * span);
-            addG3(gp[1]?.id, 0, 2.5 * span); addG3(gp[1]?.id, 1, 3.5 * span);
-        }
+            if (gen < 4) {
+                const parents = getParents(personId);
+                let halfSpan;
+                // Détermine la distance X avec le parent suivant selon la génération
+                if (gen === 0) halfSpan = 460;        // Distance G0 -> G1
+                else if (gen === 1) halfSpan = 230;   // Distance G1 -> G2
+                else if (gen === 2) halfSpan = 115;   // Distance G2 -> G3
+                else if (gen === 3) halfSpan = 57.5;  // Distance G3 -> G4 (Place exactement les 2 G4 au-dessus du G3)
 
-        // G-1: Enfants
+                if (parents[0]) {
+                    buildAscendants(parents[0].id, xCenter - halfSpan, gen + 1);
+                    links.push({ from: parents[0].id, to: personId, type: 'parent', fromGen: gen + 1, toGen: gen });
+                }
+                if (parents[1]) {
+                    buildAscendants(parents[1].id, xCenter + halfSpan, gen + 1);
+                    links.push({ from: parents[1].id, to: personId, type: 'parent', fromGen: gen + 1, toGen: gen });
+                }
+            }
+        }
+        buildAscendants(rootId, 0, 0);
+
+        // 4. Ajouter les Enfants (G-1)
         const children = getChildren(rootId);
         if (children.length > 0) {
-            const totalWidth = children.length * span - CONFIG.node.gapX;
-            let startX = -totalWidth / 2 + CONFIG.node.width / 2;
+            const totalWidth = children.length * stdSpan - CONFIG.gapX;
+            let startX = -totalWidth / 2 + CONFIG.stdWidth / 2;
             children.forEach(child => {
                 nodes.push({ id: child.id, person: child, x: startX, y: CONFIG.genCoords['-1'], gen: -1 });
-                links.push({ from: rootId, to: child.id, type: 'child' });
-                startX += span;
+                links.push({ from: rootId, to: child.id, type: 'child', fromGen: 0, toGen: -1 });
+                startX += stdSpan;
             });
         }
 
         return { nodes, links };
+    }
+
+    function getNodeSize(gen) {
+        if (gen === 4) return { w: CONFIG.g4Width, h: CONFIG.g4Height };
+        return { w: CONFIG.stdWidth, h: CONFIG.stdHeight };
     }
 
     function renderInteractiveTree(rootId) {
@@ -436,7 +448,7 @@
 
         const treeData = buildTreeStructure(rootId);
 
-        // Dessin des liens
+        // --- Dessin des Liens ---
         treeData.links.forEach(link => {
             const fromNode = treeData.nodes.find(n => n.id === link.from);
             const toNode = treeData.nodes.find(n => n.id === link.to);
@@ -445,89 +457,136 @@
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             
             if (link.type === 'spouse') {
-                // Ligne horizontale pour les unions
-                const startX = fromNode.x + CONFIG.node.width/2;
-                const endX = toNode.x - CONFIG.node.width/2;
+                const startX = fromNode.x + CONFIG.stdWidth/2;
+                const endX = toNode.x - CONFIG.stdWidth/2;
                 path.setAttribute("d", `M ${startX} ${fromNode.y} L ${endX} ${toNode.y}`);
                 path.setAttribute("class", "branch spouse-branch");
             } else {
-                // Courbe de Bézier verticale pour filiation
-                let startY = fromNode.y + CONFIG.node.height/2;
-                let endY = toNode.y - CONFIG.node.height/2;
+                const fromSize = getNodeSize(fromNode.gen);
+                const toSize = getNodeSize(toNode.gen);
+                
+                // Point de départ (bas du parent), Point d'arrivée (haut de l'enfant)
+                let startY = fromNode.y + fromSize.h/2;
+                let endY = toNode.y - toSize.h/2;
+                
                 const cpY = (startY + endY) / 2; 
                 path.setAttribute("d", `M ${fromNode.x} ${startY} C ${fromNode.x} ${cpY}, ${toNode.x} ${cpY}, ${toNode.x} ${endY}`);
                 path.setAttribute("class", "branch");
             }
-            
             linksGroup.appendChild(path);
         });
 
-        // Dessin des Nœuds
+        // --- Dessin des Noeuds ---
         treeData.nodes.forEach(nodeData => {
             const p = nodeData.person;
-            const isSelected = nodeData.id === rootId;
-            const isSpouse = nodeData.role === 'spouse';
+            const size = getNodeSize(nodeData.gen);
+            const isG4 = nodeData.gen === 4;
 
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            g.setAttribute("class", `node ${isSelected ? 'selected' : ''} ${isSpouse ? 'spouse-node' : ''}`);
+            g.setAttribute("class", `node ${nodeData.id === rootId ? 'selected' : ''} ${nodeData.role === 'spouse' ? 'spouse-node' : ''}`);
             g.setAttribute("transform", `translate(${nodeData.x}, ${nodeData.y})`);
             g.onclick = () => selectPerson(p.id);
 
+            // Boîte de base
             const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            rect.setAttribute("x", -CONFIG.node.width / 2);
-            rect.setAttribute("y", -CONFIG.node.height / 2);
-            rect.setAttribute("width", CONFIG.node.width);
-            rect.setAttribute("height", CONFIG.node.height);
+            rect.setAttribute("x", -size.w / 2);
+            rect.setAttribute("y", -size.h / 2);
+            rect.setAttribute("width", size.w);
+            rect.setAttribute("height", size.h);
             g.appendChild(rect);
 
-            const imgSize = CONFIG.node.photoSize;
-            const imgX = -CONFIG.node.width / 2 + 10;
-            const imgY = -imgSize / 2;
-
+            // Création du ClipPath (cercle de la photo)
             const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+            const clipId = `clip-${nodeData.id.replace(/@/g,'')}-${nodeData.role || ''}`;
             const clip = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-            const clipId = `clip-${nodeData.id.replace(/@/g,'')}`;
             clip.setAttribute("id", clipId);
             const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("cx", imgX + imgSize/2);
-            circle.setAttribute("cy", imgY + imgSize/2);
-            circle.setAttribute("r", imgSize/2);
             clip.appendChild(circle);
             defs.appendChild(clip);
             g.appendChild(defs);
 
             const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
             image.setAttributeNS("http://www.w3.org/1999/xlink", "href", getPhotoUrl(p));
-            image.setAttribute("x", imgX);
-            image.setAttribute("y", imgY);
-            image.setAttribute("width", imgSize);
-            image.setAttribute("height", imgSize);
             image.setAttribute("clip-path", `url(#${clipId})`);
-            g.appendChild(image);
-
+            
             const borderCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             borderCircle.setAttribute("class", "photo-circle-border");
-            borderCircle.setAttribute("cx", imgX + imgSize/2);
-            borderCircle.setAttribute("cy", imgY + imgSize/2);
-            borderCircle.setAttribute("r", imgSize/2);
-            g.appendChild(borderCircle);
 
-            const textX = imgX + imgSize + 10 + (CONFIG.node.width - imgSize - 30)/2; 
-            
-            const nameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            nameT.setAttribute("class", "node-name");
-            nameT.setAttribute("x", textX);
-            nameT.setAttribute("y", -5);
-            // Tronquer les noms excessivement longs
-            nameT.textContent = p.name.length > 30 ? p.name.substring(0, 28) + '...' : p.name;
-            g.appendChild(nameT);
+            // --- Formattage Conditionnel (G4 vs Standard) ---
+            if (isG4) {
+                // Photo centrée en haut
+                const imgRadius = 18;
+                const imgSize = imgRadius * 2;
+                const imgX = -imgRadius;
+                const imgY = -size.h/2 + 8;
+                
+                circle.setAttribute("cx", imgX + imgRadius);
+                circle.setAttribute("cy", imgY + imgRadius);
+                circle.setAttribute("r", imgRadius);
+                
+                image.setAttribute("x", imgX); image.setAttribute("y", imgY);
+                image.setAttribute("width", imgSize); image.setAttribute("height", imgSize);
+                
+                borderCircle.setAttribute("cx", imgX + imgRadius);
+                borderCircle.setAttribute("cy", imgY + imgRadius);
+                borderCircle.setAttribute("r", imgRadius);
 
-            const datesT = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            datesT.setAttribute("class", "node-dates");
-            datesT.setAttribute("x", textX);
-            datesT.setAttribute("y", 15);
-            datesT.textContent = `${p.birth || '?'} - ${p.death || '?'}`;
-            g.appendChild(datesT);
+                g.appendChild(image); g.appendChild(borderCircle);
+
+                // Textes sur plusieurs lignes
+                const fn = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                fn.setAttribute("class", "node-name-g4");
+                fn.setAttribute("x", 0); fn.setAttribute("y", 9);
+                fn.textContent = truncate(p.firstName, 13);
+                g.appendChild(fn);
+
+                const ln = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                ln.setAttribute("class", "node-name-g4-last");
+                ln.setAttribute("x", 0); ln.setAttribute("y", 24);
+                ln.textContent = truncate(p.lastName, 13);
+                g.appendChild(ln);
+
+                const dt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                dt.setAttribute("class", "node-dates-g4");
+                dt.setAttribute("x", 0); dt.setAttribute("y", 39);
+                const yB = extractYear(p.birth); const yD = extractYear(p.death);
+                dt.textContent = (yB || yD) ? `${yB} - ${yD}` : '?';
+                g.appendChild(dt);
+
+            } else {
+                // Photo alignée à gauche (Standard)
+                const imgRadius = 25;
+                const imgSize = imgRadius * 2;
+                const imgX = -size.w/2 + 10;
+                const imgY = -imgRadius;
+
+                circle.setAttribute("cx", imgX + imgRadius);
+                circle.setAttribute("cy", imgY + imgRadius);
+                circle.setAttribute("r", imgRadius);
+
+                image.setAttribute("x", imgX); image.setAttribute("y", imgY);
+                image.setAttribute("width", imgSize); image.setAttribute("height", imgSize);
+                
+                borderCircle.setAttribute("cx", imgX + imgRadius);
+                borderCircle.setAttribute("cy", imgY + imgRadius);
+                borderCircle.setAttribute("r", imgRadius);
+
+                g.appendChild(image); g.appendChild(borderCircle);
+
+                const textX = imgX + imgSize + 10 + (size.w - imgSize - 30)/2; 
+                
+                const nameT = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                nameT.setAttribute("class", "node-name");
+                nameT.setAttribute("x", textX); nameT.setAttribute("y", -5);
+                nameT.textContent = truncate(p.name, 28);
+                g.appendChild(nameT);
+
+                const datesT = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                datesT.setAttribute("class", "node-dates");
+                datesT.setAttribute("x", textX); datesT.setAttribute("y", 15);
+                datesT.textContent = `${p.birth || '?'} - ${p.death || '?'}`;
+                g.appendChild(datesT);
+            }
 
             nodesGroup.appendChild(g);
         });
@@ -557,10 +616,8 @@
         svg.addEventListener('mousemove', (e) => {
             if (!svgState.grabbing) return;
             e.preventDefault();
-            const dx = e.clientX - svgState.point.x;
-            const dy = e.clientY - svgState.point.y;
-            svgState.translate.x += dx;
-            svgState.translate.y += dy;
+            svgState.translate.x += e.clientX - svgState.point.x;
+            svgState.translate.y += e.clientY - svgState.point.y;
             svgState.point = { x: e.clientX, y: e.clientY };
             updateTransform();
         });
@@ -569,10 +626,8 @@
             e.preventDefault();
             const xs = (e.clientX - svgState.translate.x) / svgState.scale;
             const ys = (e.clientY - svgState.translate.y) / svgState.scale;
-            const delta = -e.deltaY;
-            const factor = delta > 0 ? 1.1 : 0.9;
-            let newScale = svgState.scale * factor;
-            newScale = Math.min(Math.max(0.15, newScale), 3);
+            const factor = -e.deltaY > 0 ? 1.1 : 0.9;
+            let newScale = Math.min(Math.max(0.15, svgState.scale * factor), 3);
 
             svgState.translate.x = e.clientX - xs * newScale;
             svgState.translate.y = e.clientY - ys * newScale;
@@ -586,15 +641,12 @@
     function zoom(factor) {
         const svg = document.getElementById('tree-svg');
         const rect = svg.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        const xs = (centerX - svgState.translate.x) / svgState.scale;
-        const ys = (centerY - svgState.translate.y) / svgState.scale;
-        let newScale = svgState.scale * factor;
-        newScale = Math.min(Math.max(0.15, newScale), 3);
-
-        svgState.translate.x = centerX - xs * newScale;
-        svgState.translate.y = centerY - ys * newScale;
+        const xs = (rect.width/2 - svgState.translate.x) / svgState.scale;
+        const ys = (rect.height/2 - svgState.translate.y) / svgState.scale;
+        
+        let newScale = Math.min(Math.max(0.15, svgState.scale * factor), 3);
+        svgState.translate.x = rect.width/2 - xs * newScale;
+        svgState.translate.y = rect.height/2 - ys * newScale;
         svgState.scale = newScale;
         svg.updateTransform();
     }
@@ -608,22 +660,19 @@
     function centerOnNode(personId) {
         if(!document.getElementById('nodes-group').children.length) renderInteractiveTree(personId);
         const svg = document.getElementById('tree-svg');
-        const rect = svg.getBoundingClientRect();
         const nodesGroup = document.getElementById('nodes-group');
         let targetX = 0, targetY = 0;
         
         for (let nodeSVG of nodesGroup.children) {
             if(nodeSVG.classList.contains('selected')) {
-                 const transform = nodeSVG.getAttribute('transform');
-                 const match = /translate\(([^,]+),\s*([^\)]+)\)/.exec(transform);
+                 const match = /translate\(([^,]+),\s*([^\)]+)\)/.exec(nodeSVG.getAttribute('transform'));
                  if(match) { targetX = parseFloat(match[1]); targetY = parseFloat(match[2]); }
                  break;
             }
         }
-
         svgState.scale = 1; 
-        svgState.translate.x = rect.width / 2 - targetX;
-        svgState.translate.y = rect.height / 2 - targetY;
+        svgState.translate.x = svg.getBoundingClientRect().width / 2 - targetX;
+        svgState.translate.y = svg.getBoundingClientRect().height / 2 - targetY;
         svg.updateTransform();
     }
 
@@ -634,9 +683,7 @@
         document.getElementById(tabId).classList.add('active');
         event.currentTarget.classList.add('active');
 
-        if(tabId === 'tree-view' && currentPersonId) {
-            setTimeout(()=> centerOnNode(currentPersonId), 10);
-        }
+        if(tabId === 'tree-view' && currentPersonId) setTimeout(()=> centerOnNode(currentPersonId), 10);
     }
 
     function renderDetails(id) {
@@ -644,17 +691,15 @@
         const container = document.getElementById('details-content');
         
         let html = `
-            <img src="${getPhotoUrl(p)}" class="details-photo-big" alt="Photo de ${p.name}">
+            <img src="${getPhotoUrl(p)}" class="details-photo-big" alt="Photo">
             <div class="details-info-hash">
-                <div class="label">Identifiant GEDCOM</div><div>${p.id}</div>
+                <div class="label">Identifiant</div><div>${p.id}</div>
                 <div class="label">Nom Complet</div><div style="font-size:1.2em; font-weight:bold;">${p.name}</div>
                 <div class="label">Sexe</div><div>${p.sex === 'M' ? 'Homme' : (p.sex === 'F' ? 'Femme' : 'Inconnu')}</div>
-                <div class="label">Date de Naissance</div><div>${p.birth || '-'}</div>
-                <div class="label">Date de Décès</div><div>${p.death || '-'}</div>
+                <div class="label">Naissance</div><div>${p.birth || '-'}</div>
+                <div class="label">Décès</div><div>${p.death || '-'}</div>
             </div>
-            <div style="grid-column: span 2; border-top: 2px solid #eee; margin-top:10px; padding-top:10px;">
-                <h3>Famille</h3>
-            </div>
+            <div style="grid-column: span 2; border-top: 2px solid #eee; margin-top:10px; padding-top:10px;"><h3>Famille</h3></div>
             <div class="details-info-hash" style="grid-column: span 2;">
         `;
 
@@ -668,10 +713,8 @@
                 if (fam) {
                     let spouseId = fam.husb === id ? fam.wife : fam.husb;
                     let spouse = spouseId ? getPerson(spouseId) : null;
-                    let spouseName = spouse ? spouse.name : "Inconnu(e)";
-                    
                     html += `<div class="label" style="color:var(--union)">Union ${index + 1}</div>
-                             <div>${spouse ? `<span class="clickable-link" onclick="selectPerson('${spouse.id}')">${spouseName}</span>` : spouseName}</div>`;
+                             <div>${spouse ? `<span class="clickable-link" onclick="selectPerson('${spouse.id}')">${spouse.name}</span>` : 'Inconnu(e)'}</div>`;
                     
                     let childLinks = [];
                     if(fam.chil) {
@@ -680,21 +723,13 @@
                             if(child) childLinks.push(`<span class="clickable-link" onclick="selectPerson('${child.id}')">${child.name}</span>`);
                         });
                     }
-
-                    if (childLinks.length > 0) {
-                        html += `<div class="label">Enfants (${childLinks.length})</div><div>${childLinks.join('<br>')}</div>`;
-                    }
+                    if (childLinks.length > 0) html += `<div class="label">Enfants (${childLinks.length})</div><div>${childLinks.join('<br>')}</div>`;
                 }
             });
         } else {
              html += `<div class="label">Unions</div><div>Aucune union enregistrée</div>`;
         }
-
         html += `</div>`;
-        if(p.photo) {
-             html += `<div style="grid-column: span 2; font-size:0.8em; color:#888; margin-top:20px; border-top:1px solid #eee">Chemin image GEDCOM : ${p.photo}</div>`;
-        }
-
         container.innerHTML = html;
     }
 </script>
